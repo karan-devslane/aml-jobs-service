@@ -19,7 +19,7 @@ const uploadQuestion = async (req: Request, res: Response) => {
     //validating the schema
     const isRequestValid: Record<string, any> = schemaValidation(requestBody, templateSchema);
     if (!isRequestValid.isValid) {
-      const code = 'TEMPLATE_INVALID_INPUT';
+      const code = 'UPLOAD_INVALID_INPUT';
       logger.error({ code, apiIdUpload, requestBody, message: isRequestValid.message });
       return res.status(httpStatus.BAD_REQUEST).json(errorResponse(apiIdUpload, httpStatus.BAD_REQUEST, isRequestValid.message, code));
     }
@@ -29,7 +29,7 @@ const uploadQuestion = async (req: Request, res: Response) => {
 
     //signed url for upload question
     const getSignedUrl = await uploadSignedUrl(folderName, process_id, fileName, expiryTime);
-    const { error, message, url, name } = getSignedUrl;
+    const { error, message, url } = getSignedUrl;
 
     if (!error) {
       const insertProcess = await createProcess({
@@ -45,12 +45,12 @@ const uploadQuestion = async (req: Request, res: Response) => {
         throw new Error(insertProcess.message);
       }
       logger.info({ apiIdUpload, requestBody, message: `signed url created successfully ` });
-      return res.status(httpStatus.OK).json(successResponse(apiIdUpload, { message, url, name, process_id }));
+      return res.status(httpStatus.OK).json(successResponse(apiIdUpload, { message, url, fileName, process_id }));
     }
     throw new Error(message);
   } catch (error) {
     const err = error instanceof Error;
-    const code = _.get(error, 'code', 'TEMPLATE_GET_FAILURE');
+    const code = _.get(error, 'code', 'UPLOAD_QUESTION_FAILURE');
     const errorMsg = err ? error.message : 'error while upload question';
     logger.error({ errorMsg, apiIdUpload, code, requestBody });
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(apiIdUpload, httpStatus.INTERNAL_SERVER_ERROR, err ? error.message : '', code));

@@ -52,20 +52,16 @@ export const uploadTemplateSignedUrl = async (folderName: string, fileName: stri
 
 export const uploadSignedUrl = async (folderName: string, process_id: string, fileName: string, expiry: number) => {
   try {
-    const timestamp = Date.now();
-
-    const name = `${timestamp}_${fileName}`;
-
     const command = new PutObjectCommand({
       Bucket: bucketName,
-      Key: `${folderName}/${process_id}/${name}`,
+      Key: `${folderName}/${process_id}/${fileName}`,
     });
 
     const url = await getSignedUrl(s3Client, command, {
       expiresIn: 60 * expiry || 300,
     });
 
-    return { error: false, name, url, message: 'success' };
+    return { error: false, fileName, url, message: 'success' };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to generate URLs for upload' : '';
