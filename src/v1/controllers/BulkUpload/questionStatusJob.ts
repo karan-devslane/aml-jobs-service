@@ -9,7 +9,7 @@ import { appConfiguration } from '../../config';
 
 const { fibCsvFileName, gridCsvFileName, mcqCsvFileName } = appConfiguration;
 
-const checkStatus = new CronJob('0 */01 * * * *', async () => {
+const checkStatus = new CronJob('0 9,21 * * *', async () => {
   try {
     const processInfo = await getProcessByMetaData({ status: 'open' });
     const { getProcess } = processInfo;
