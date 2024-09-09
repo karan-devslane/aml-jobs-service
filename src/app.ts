@@ -10,80 +10,54 @@ const { envPort } = appConfiguration;
 
 const app: Application = express();
 
-const initializeServer = async (): Promise<void> => {
-  try {
-    // Create the Express application
+const initializeServer = (): void => {
+  // Middleware setup
+  app.use(bodyParser.json({ limit: '5mb' }));
+  app.use(bodyParser.urlencoded({ limit: '5mb', extended: true, parameterLimit: 50000 }));
+  app.use(cors());
 
-    // Middleware for parsing JSON request body
-    app.use(bodyParser.json({ limit: '5mb' }));
+  // Router setup
+  app.use('/api/v1', router);
 
-    app.use(
-      bodyParser.urlencoded({
-        limit: '5mb',
-        extended: true,
-        parameterLimit: 50000,
-      }),
-    );
+  // 404 handler for unknown API requests
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    next({ statusCode: NOT_FOUND, message: 'Not found' });
+  });
 
-    app.use(express.json({ limit: '5mb' }));
+  // Database connection
+  AppDataSource.authenticate()
+    .then(() => {
+      logger.info('Database connected successfully');
 
-    // Middleware to enable CORS
-    app.use(cors());
-
-    // Enable CORS preflight for all routes
-    app.options('*', cors());
-
-    //router
-    app.use('/api/v1', router);
-
-    // 404 handler for unknown API requests
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      next({ statusCode: NOT_FOUND, message: 'Not found' });
-    });
-
-    //database connection
-    await AppDataSource.authenticate()
-      .then(() => logger.info('database connected successfully'))
-      .catch((err: any) => logger.info(`error in database connection ${err}`));
-
-    //database sync
-    // await AppDataSource.sync({ alter: true })
-    //   .then(() => logger.info('database sync successfully'))
-    //   .catch((err: any) => logger.info(`error in database sync ${err}`));
-
-    // Start the server
-    const server = app.listen(envPort, () => {
-      logger.info(`Listening on port .`);
-    });
-
-    // Graceful server shutdown
-    const exitHandler = (): void => {
-      server.close(() => {
-        logger.info('Server closed');
-
-        process.exit(0);
+      // Start the server
+      const server = app.listen(envPort, () => {
+        logger.info(`Listening on port ${envPort}`);
       });
-    };
 
-    // Handle uncaught exceptions and unhandled rejections
-    const unexpectedErrorHandler = (error: Error): void => {
-      logger.error('error', error);
+      // Graceful shutdown
+      const exitHandler = (): void => {
+        server.close(() => {
+          logger.info('Server closed');
+          process.exit(0);
+        });
+      };
 
-      exitHandler();
-    };
+      const unexpectedErrorHandler = (error: Error): void => {
+        logger.error('Unexpected error', error);
+        exitHandler();
+      };
 
-    process.on('uncaughtException', unexpectedErrorHandler);
-
-    process.on('unhandledRejection', unexpectedErrorHandler);
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-
-    process.exit(1);
-  }
+      process.on('uncaughtException', unexpectedErrorHandler);
+      process.on('unhandledRejection', unexpectedErrorHandler);
+    })
+    .catch((err) => {
+      logger.error(`Error in database connection: ${err.message || err}`);
+      process.exit(1); // Exit if database connection fails
+    });
 };
 
 // Start the server
-void initializeServer();
+initializeServer();
 
-//export for testing
+// Export for testing
 export default app;
