@@ -27,15 +27,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.637.0",
     "@aws-sdk/s3-request-presigner": "^3.637.0",
-    "@types/pg": "^8.11.6",
     "adm-zip": "^0.5.16",
-    "ajv": "^8.17.1",
     "cors": "^2.8.5",
     "cron": "^3.1.7",
     "express": "^5.0.0-beta.3",
     "http-status": "^1.7.4",
     "lodash": "^4.17.21",
-    "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.3",
     "sequelize-typescript": "^2.1.6",
     "uuid": "^9.0.1",
@@ -43,6 +40,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "@types/pg": "^8.11.6",
     "@types/adm-zip": "^0.5.5",
     "@types/chai": "^4.3.3",
     "@types/chai-spies": "^1.0.3",
@@ -57,7 +55,6 @@
     "chai": "^4.3.6",
     "chai-http": "^4.3.0",
     "chai-spies": "^1.1.0",
-    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
