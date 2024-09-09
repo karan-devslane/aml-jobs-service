@@ -27,9 +27,6 @@ const initializeServer = async (): Promise<void> => {
 
     app.use(express.json({ limit: '5mb' }));
 
-    // Middleware for parsing urlencoded request body
-    app.use(express.urlencoded({ extended: true }));
-
     // Middleware to enable CORS
     app.use(cors());
 

@@ -26,9 +26,9 @@ const appConfiguration: IConfiguration = {
   accessKeyId: get(envVars, 'ACCESS_KEY_ID', ''),
   secretAccessKey: get(envVars, 'SECRET_KEY', ''),
   region: get(envVars, 'REGION', ''),
-  fibCsvFileName: get(envVars, 'FIB_CSV_FILE_NAME', []),
-  mcqCsvFileName: get(envVars, 'MCQ_CSV_FILE_NAME', []),
-  gridCsvFileName: get(envVars, 'GRID_CSV_FILE_NAME', []),
+  fibCsvFileName: get(envVars, 'FIB_CSV_FILE_NAME') as unknown as string[],
+  mcqCsvFileName: get(envVars, 'MCQ_CSV_FILE_NAME') as unknown as string[],
+  gridCsvFileName: get(envVars, 'GRID_CSV_FILE_NAME') as unknown as string[],
 };
 
 export default appConfiguration;
