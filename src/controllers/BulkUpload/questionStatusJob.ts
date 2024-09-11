@@ -201,16 +201,6 @@ const fetchAndExtractZipEntries = async (folderName: string, folderPath: string,
   }
 };
 
-export const manualTriggerQuestion = () => {
-  try {
-    checkStatus.fireOnTick();
-  } catch (error) {
-    const code = _.get(error, 'code', 'QUESTION_CRON_UPDATE');
-    const errorMsg = error instanceof Error ? error.message : 'Error during upload validation';
-    logger.error({ errorMsg, code });
-  }
-};
-
 // Function to update error status and message
 const markProcessAsFailed = async (process_id: string, error_status: string, error_message: string) => {
   await updateProcess(process_id, {
