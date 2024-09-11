@@ -25,4 +25,4 @@ jobs:
         with:
           file: ./Dockerfile
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/aml-api-service:${{ github.ref_name }}
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/aml-jobs-service:${{ github.ref_name }}
