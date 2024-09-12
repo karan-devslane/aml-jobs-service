@@ -2,15 +2,9 @@ import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } fr
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { appConfiguration } from '../config';
 
-const { accessKeyId, bucketName, secretAccessKey, region } = appConfiguration;
+const { bucketName } = appConfiguration;
 
-const s3Client = new S3Client({
-  region,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
-});
+const s3Client = new S3Client({});
 
 export const getTemplateSignedUrl = async (folderName: string, fileName: string, expiry: number) => {
   try {

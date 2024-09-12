@@ -3,7 +3,8 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import { NOT_FOUND } from 'http-status';
 import { appConfiguration, AppDataSource } from './config';
 import logger from './utils/logger';
-import { amlErrorHandler } from './middleware/errorhandler';
+import { amlErrorHandler } from './middlewares/errorhandler';
+import { scheduleCronJob } from './controllers/BulkUpload/questionStatusJob';
 
 const { envPort } = appConfiguration;
 
@@ -41,10 +42,10 @@ const initializeServer = async (): Promise<void> => {
     // Middleware to enable CORS
     app.use(cors());
 
+    scheduleCronJob();
+
     // Enable CORS preflight for all routes
     app.options('*', cors());
-
-    // Router
 
     app.use(amlErrorHandler);
 
@@ -54,13 +55,11 @@ const initializeServer = async (): Promise<void> => {
     });
 
     // Database connection
-    await AppDataSource.sync()
-      .then(() => logger.info('Database connection successful'))
-      .catch((err: any) => logger.error('Error in database connection', { message: err.message }));
+    await AppDataSource.sync().finally(() => logger.info('db connected'));
 
     // Start the server
     app.listen(envPort, () => {
-      logger.info(`Listening on port.`);
+      logger.info(`Port served.`);
     });
 
     // Handle uncaught exceptions and unhandled rejections

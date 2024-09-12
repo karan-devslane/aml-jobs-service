@@ -9,10 +9,6 @@ export const Process = AppDataSource.define(
       primaryKey: true,
       autoIncrement: true,
     },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     description: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -26,7 +22,7 @@ export const Process = AppDataSource.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('in_progres', 'open', 'is_failed', 'is_completed'),
+      type: DataTypes.ENUM('open', 'in_progres', 'is_completed', 'is_failed'),
       allowNull: false,
     },
     error_status: {

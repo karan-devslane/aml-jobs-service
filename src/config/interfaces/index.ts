@@ -7,7 +7,7 @@ export interface IConfiguration {
     size: string;
     zippedArchive: boolean;
   };
-  envPort: string;
+  envPort: number;
   applicationEnv: string;
   appVersion: string;
   DB: {
@@ -18,10 +18,6 @@ export interface IConfiguration {
     name: string;
   };
   bucketName: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  region: string;
-  fibCsvFileName: string[];
-  mcqCsvFileName: string[];
-  gridCsvFileName: string[];
+  csvFileName: string[];
+  cronJobPrcessUpdate: string;
 }
