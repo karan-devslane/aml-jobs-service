@@ -69,7 +69,7 @@ const validateZipFiles = async (process_id: string, s3Objects: any, folderPath: 
         await markProcessAsFailed(process_id, 'is_unsupported_file_name', `The uploaded file '${entry.entryName}' is not a valid file name.`);
         return false;
       }
-      const validCSV = await validateCSVFormat(process_id, entry, fileName, mediaFiles);
+      const validCSV = await validateCsvFile(process_id, entry, fileName, mediaFiles);
       if (!validCSV) return false;
     }
     return true;
@@ -82,7 +82,7 @@ const validateZipFiles = async (process_id: string, s3Objects: any, folderPath: 
   }
 };
 
-const validateCSVFormat = async (process_id: string, entry: any, fileName: string, mediaContent: any): Promise<boolean> => {
+const validateCsvFile = async (process_id: string, entry: any, fileName: string, mediaContent: any): Promise<boolean> => {
   try {
     const templateZipEntries = await fetchAndExtractZipEntries('template', '', fileName);
     const templateFileContent = templateZipEntries
