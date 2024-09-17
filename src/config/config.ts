@@ -24,7 +24,7 @@ const appConfiguration: IConfiguration = {
   },
   bucketName: get(envVars, 'BUCKET_NAME', ''),
   csvFileName: get(envVars, 'CSV_FILE_NAME', '').split(','),
-  cronJobPrcessUpdate: get(envVars, 'CRON_JOB_PROCESS_UPDATE', '0 9,21 * * *'),
+  presignedUrlExpiry: get(envVars, 'PRESIGNED_URL_EXPIRY_TIME', 600) as number,
 };
 
 export default appConfiguration;

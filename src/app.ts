@@ -4,7 +4,7 @@ import { NOT_FOUND } from 'http-status';
 import { appConfiguration, AppDataSource } from './config';
 import logger from './utils/logger';
 import { amlErrorHandler } from './middlewares/errorhandler';
-import { scheduleCronJob } from './controllers/BulkUpload/questionStatusJob';
+import { scheduleJob } from './controllers/BulkUpload/questionStatusJob';
 
 const { envPort } = appConfiguration;
 
@@ -42,7 +42,7 @@ const initializeServer = async (): Promise<void> => {
     // Middleware to enable CORS
     app.use(cors());
 
-    scheduleCronJob();
+    await scheduleJob();
 
     // Enable CORS preflight for all routes
     app.options('*', cors());

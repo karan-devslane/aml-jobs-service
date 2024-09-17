@@ -19,5 +19,5 @@ export interface IConfiguration {
   };
   bucketName: string;
   csvFileName: string[];
-  cronJobPrcessUpdate: string;
+  presignedUrlExpiry: number;
 }

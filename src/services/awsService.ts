@@ -2,19 +2,19 @@ import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } fr
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { appConfiguration } from '../config';
 
-const { bucketName } = appConfiguration;
+const { bucketName, presignedUrlExpiry } = appConfiguration;
 
 const s3Client = new S3Client({});
 
-export const getTemplateSignedUrl = async (folderName: string, fileName: string, expiry: number) => {
+export const getTemplateSignedUrl = async (fileName: string) => {
   try {
     const command = new GetObjectCommand({
       Bucket: bucketName,
-      Key: `${folderName}/${fileName}`,
+      Key: `template/${fileName}`,
     });
 
     const url = await getSignedUrl(s3Client, command, {
-      expiresIn: 60 * expiry || 300,
+      expiresIn: presignedUrlExpiry,
     });
 
     return { error: false, url, message: 'success' };
@@ -25,7 +25,7 @@ export const getTemplateSignedUrl = async (folderName: string, fileName: string,
   }
 };
 
-export const uploadTemplateSignedUrl = async (folderName: string, fileName: string, expiry: number) => {
+export const uploadTemplateSignedUrl = async (folderName: string, fileName: string) => {
   try {
     const command = new PutObjectCommand({
       Bucket: bucketName,
@@ -33,7 +33,7 @@ export const uploadTemplateSignedUrl = async (folderName: string, fileName: stri
     });
 
     const url = await getSignedUrl(s3Client, command, {
-      expiresIn: 60 * expiry || 300,
+      expiresIn: presignedUrlExpiry,
     });
 
     return { error: false, fileName, url, message: 'success' };
@@ -44,7 +44,7 @@ export const uploadTemplateSignedUrl = async (folderName: string, fileName: stri
   }
 };
 
-export const uploadSignedUrl = async (folderName: string, process_id: string, fileName: string, expiry: number) => {
+export const uploadSignedUrl = async (folderName: string, process_id: string, fileName: string) => {
   try {
     const command = new PutObjectCommand({
       Bucket: bucketName,
@@ -52,7 +52,7 @@ export const uploadSignedUrl = async (folderName: string, process_id: string, fi
     });
 
     const url = await getSignedUrl(s3Client, command, {
-      expiresIn: 60 * expiry || 300,
+      expiresIn: presignedUrlExpiry,
     });
 
     return { error: false, fileName, url, message: 'success' };
@@ -63,7 +63,7 @@ export const uploadSignedUrl = async (folderName: string, process_id: string, fi
   }
 };
 
-export const getQuestionSignedUrl = async (folderName: string, fileName: string, expiry: number) => {
+export const getQuestionSignedUrl = async (folderName: string, fileName: string) => {
   try {
     const command = new GetObjectCommand({
       Bucket: bucketName,
@@ -71,7 +71,7 @@ export const getQuestionSignedUrl = async (folderName: string, fileName: string,
     });
 
     const url = await getSignedUrl(s3Client, command, {
-      expiresIn: 60 * expiry || 300,
+      expiresIn: presignedUrlExpiry,
     });
 
     return { error: false, url, message: 'success' };
