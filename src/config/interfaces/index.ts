@@ -20,4 +20,5 @@ export interface IConfiguration {
   bucketName: string;
   csvFileName: string[];
   presignedUrlExpiry: number;
+  processInterval: number;
 }

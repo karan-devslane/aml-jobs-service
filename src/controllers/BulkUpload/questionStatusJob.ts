@@ -165,13 +165,13 @@ const markProcessAsFailed = async (process_id: string, error_status: string, err
 };
 
 function validateQuestionCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[], mediaContent: any) {
-  throw new Error('Function not implemented.');
+  throw new Error('Function implemented.will be in next PR');
 }
 
 function validateQuestionSetCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[]) {
-  throw new Error('Function not implemented.');
+  throw new Error('Function implemented.will be in next PR');
 }
 
 function validateContentCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[], mediaContent: any) {
-  throw new Error('Function not implemented.');
+  throw new Error('Function implemented.will be in next PR');
 }

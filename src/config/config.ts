@@ -25,6 +25,7 @@ const appConfiguration: IConfiguration = {
   bucketName: get(envVars, 'BUCKET_NAME', ''),
   csvFileName: get(envVars, 'CSV_FILE_NAME', '').split(','),
   presignedUrlExpiry: get(envVars, 'PRESIGNED_URL_EXPIRY_TIME', 600) as number,
+  processInterval: get(envVars, 'PROCESS_INTERVAL', 300000) as number,
 };
 
 export default appConfiguration;
