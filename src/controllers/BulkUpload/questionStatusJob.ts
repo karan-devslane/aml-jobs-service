@@ -49,7 +49,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
     });
     logger.error('The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
   } else {
-    await updateProcess(Process_id, { status: 'open', updated_by: 1 });
+    await updateProcess(Process_id, { status: 'progress', updated_by: 1 });
     logger.info(`Bulk upload folder found and valid zip for process id:${Process_id}`);
     await validateCSVFilesInZip();
   }
