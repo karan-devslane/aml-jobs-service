@@ -18,8 +18,8 @@ export const createProcess = async (req: Optional<any, string>): Promise<any> =>
 export const getProcessByMetaData = async (req: any): Promise<any> => {
   try {
     req.is_active = true;
-    const getProcess = await Process.findAll({ where: req, raw: true });
-    return { error: false, getProcess };
+    const getAllProcess = await Process.findAll({ where: req, raw: true });
+    return { error: false, getAllProcess };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

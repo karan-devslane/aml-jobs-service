@@ -1,47 +1,30 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { appConfiguration } from '../config';
+import logger from '../utils/logger';
 
 const { bucketName, presignedUrlExpiry } = appConfiguration;
 
 const s3Client = new S3Client({});
 
-export const getTemplateSignedUrl = async (fileName: string) => {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: `template/${fileName}`,
-    });
-
-    const url = await getSignedUrl(s3Client, command, {
-      expiresIn: presignedUrlExpiry,
-    });
-
-    return { error: false, url, message: 'success' };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to generate URL for get' : '';
-    return { error: true, message: errorMsg };
-  }
+export const getFolderData = async (filePath: string) => {
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: filePath,
+  });
+  const response = await s3Client.send(command);
+  logger.info('stream object get from cloud');
+  return response.Body;
 };
 
-export const uploadSignedUrl = async (fileName: string) => {
-  try {
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: `upload/${fileName}`,
-    });
-
-    const url = await getSignedUrl(s3Client, command, {
-      expiresIn: presignedUrlExpiry,
-    });
-
-    return { error: false, fileName, url, message: 'success' };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to generate URLs for upload' : '';
-    return { error: true, message: errorMsg };
-  }
+export const uploadFiles = async (filesData: any, type: string) => {
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: `media/${type}/${filesData.entryName}`,
+    Body: filesData.getData(),
+  });
+  const response = s3Client.send(command);
+  return response;
 };
 
 export const getQuestionSignedUrl = async (folderName: string, fileName: string) => {
@@ -63,7 +46,7 @@ export const getQuestionSignedUrl = async (folderName: string, fileName: string)
   }
 };
 
-export const getAllCloudFolder = async (folderPath: string) => {
+export const getFolderMetaData = async (folderPath: string) => {
   try {
     const command = new ListObjectsV2Command({
       Bucket: bucketName,

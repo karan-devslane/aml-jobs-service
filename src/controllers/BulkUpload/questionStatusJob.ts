@@ -1,152 +1,146 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import logger from '../../utils/logger';
 import * as _ from 'lodash';
-import { getAllCloudFolder, getQuestionSignedUrl, getTemplateSignedUrl } from '../../services/awsService';
+import { getFolderMetaData, getFolderData } from '../../services/awsService';
 import { getProcessByMetaData, updateProcess } from '../../services/process';
 import path from 'path';
 import AdmZip from 'adm-zip';
 import { appConfiguration } from '../../config';
 
 const { csvFileName } = appConfiguration;
+let FILENAME: string;
+let Process_id: string;
+
 export const scheduleJob = async () => {
-  const processInfo = await getProcessByMetaData({ status: 'open' });
-  const { getProcess } = processInfo;
+  const processesInfo = await getProcessByMetaData({ status: 'open' });
+  const { getAllProcess } = processesInfo;
   try {
-    const validFileNames: string[] = csvFileName;
-    for (const process of getProcess) {
+    for (const process of getAllProcess) {
       const { process_id, fileName } = process;
+      FILENAME = fileName;
+      Process_id = process_id;
       const folderPath = `upload/${process_id}`;
-      const s3Objects = await getAllCloudFolder(folderPath);
-      if (isFolderEmpty(s3Objects)) {
-        await markProcessAsFailed(process_id, 'is_empty', 'The uploaded zip folder is empty, please ensure a valid upload file.');
-        continue;
-      }
-      const validZip = await validateZipFiles(process_id, s3Objects.Contents, folderPath, fileName, validFileNames);
-      if (!validZip) {
-        continue;
-      }
+      const bulkUploadMetadata = await getFolderMetaData(folderPath);
+      logger.info('Starting bulk upload folder validation.');
+      await validateZipFile(bulkUploadMetadata);
     }
   } catch (error) {
-    const code = _.get(error, 'code', 'UPLOAD_JOB_PROCESS');
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation.Re upload file for new process';
-    await markProcessAsFailed(getProcess[0].dataValues.process_id, 'failed', 'Error during upload validation.Re upload file for new process');
-    logger.error({ errorMsg, code });
+    await updateProcess(Process_id, { status: 'errored', error_status: 'errored', error_message: 'Error during upload validation.Re upload file for new process' });
+    logger.error(errorMsg);
   }
 };
 
-// Function to check if the folder is empty
-const isFolderEmpty = (s3Objects: any): boolean => {
-  return !s3Objects.Contents || _.isEmpty(s3Objects.Contents);
+const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
+  if (_.isEmpty(bulkUploadMetadata.Contents)) {
+    await updateProcess(Process_id, {
+      error_status: 'empty',
+      error_message: 'The uploaded zip folder is empty, please ensure a valid upload file.',
+      status: 'failed',
+    });
+    logger.error('The uploaded zip folder is empty, please ensure a valid upload file.');
+  }
+  const fileExt = path.extname(bulkUploadMetadata.Contents[0].Key || '').toLowerCase();
+  if (fileExt !== '.zip') {
+    await updateProcess(Process_id, {
+      error_status: 'unsupported_format',
+      error_message: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.',
+      status: 'failed',
+    });
+    logger.error('The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
+  } else {
+    await updateProcess(Process_id, { status: 'open', updated_by: 1 });
+    logger.info(`Bulk upload folder found and valid zip for process id:${Process_id}`);
+    await validateCSVFilesInZip();
+  }
 };
 
-const validateZipFiles = async (process_id: string, s3Objects: any, folderPath: string, fileName: string, validFileNames: string[]): Promise<boolean> => {
-  let isZipFile = true;
+const validateCSVFilesInZip = async (): Promise<boolean> => {
   try {
-    const fileExt = path.extname(s3Objects[0].Key || '').toLowerCase();
-    if (fileExt !== '.zip') {
-      await markProcessAsFailed(process_id, 'is_unsupported_format', 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
-      isZipFile = false;
-    } else {
-      await updateProcess(process_id, { status: 'progress', updated_by: 1 });
-    }
-
-    if (!isZipFile) return false;
-    let mediaFiles;
-    const questionZipEntries = await fetchAndExtractZipEntries('upload', folderPath, fileName);
-
-    for (const entry of questionZipEntries) {
-      if (entry.entryName === 'media/' && entry.isDirectory) {
-        mediaFiles = entry;
-        continue;
-      }
-      if (!entry.isDirectory && entry.entryName.includes('media/')) continue;
+    const ZipEntries = await fetchAndExtractZipEntries('upload');
+    const mediaZipEntries = ZipEntries.filter((e) => !e.entryName.endsWith('.csv'));
+    const csvZipEntries = ZipEntries.filter((e) => e.entryName.endsWith('.csv'));
+    for (const entry of csvZipEntries) {
       if (entry.isDirectory && entry.entryName.includes('.csv')) {
-        await markProcessAsFailed(process_id, 'is_unsupported_folder_type', 'The uploaded ZIP folder contains valid files with valid format. Follow the template format.');
+        await updateProcess(Process_id, {
+          error_status: 'unsupported_folder_type',
+          error_message: 'The uploaded ZIP folder contains valid files with valid format. Follow the template format.',
+          status: 'failed',
+        });
+        logger.error('The uploaded ZIP folder contains valid files with valid format. Follow the template format.');
         return false;
       }
-
-      if (!validFileNames.includes(entry.entryName)) {
-        await markProcessAsFailed(process_id, 'is_unsupported_file_name', `The uploaded file '${entry.entryName}' is not a valid file name.`);
+      if (!csvFileName.includes(entry.entryName)) {
+        await updateProcess(Process_id, {
+          error_status: 'unsupported_folder_type',
+          error_message: `The uploaded file '${entry.entryName}' is not a valid file name.`,
+          status: 'failed',
+        });
+        logger.error(`The uploaded file '${entry.entryName}' is not a valid file name.`);
         return false;
       }
-      const validCSV = await validateCsvFile(process_id, entry, fileName, mediaFiles);
-      if (!validCSV) return false;
     }
-    return true;
+    logger.info('every csv file have valid file name');
+    const validCSV = await handleCSVEntries(csvZipEntries, mediaZipEntries);
+    return validCSV;
   } catch (error) {
-    const code = _.get(error, 'code', 'UPLOAD_JOB_PROCESS');
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
-    logger.error({ errorMsg, code });
-    await markProcessAsFailed(process_id, 'is failed', 'Error during upload validation,please re upload the zip file for the new process');
+    logger.error(errorMsg);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: errorMsg,
+      status: 'errored',
+    });
     return false;
   }
 };
 
-const validateCsvFile = async (process_id: string, entry: any, fileName: string, mediaContent: any): Promise<boolean> => {
+const handleCSVEntries = async (csvFilesEntries: any, mediaEntires: any): Promise<any> => {
   try {
-    const templateZipEntries = await fetchAndExtractZipEntries('template', '', fileName);
-    const templateFileContent = templateZipEntries
-      .find((t) => t.entryName === entry.entryName)
-      ?.getData()
-      .toString('utf8');
-
-    if (!templateFileContent) {
-      await markProcessAsFailed(process_id, 'invalid_template', `Template for '${entry.entryName}' not found.`);
-      return false;
+    for (const entry of csvFilesEntries) {
+      const checkKey = entry.entryName.split('_')[1];
+      switch (checkKey) {
+        case 'question.csv':
+          await validateQuestionCsv(entry, mediaEntires);
+          break;
+        case 'questionSet.csv':
+          await validateQuestionSetCsv(entry);
+          break;
+        case 'content.csv':
+          await validateContentCsv(entry, mediaEntires);
+          break;
+        default:
+          await updateProcess(Process_id, {
+            error_status: 'unsupported_sheet',
+            error_message: `Unsupported sheet in file '${entry.entryName}'.`,
+            status: 'failed',
+          });
+          logger.error(`Unsupported sheet in file '${entry.entryName}'.`);
+      }
     }
-
-    const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
-
-    const questionFileContent = entry.getData().toString('utf8');
-    const [Qheader, ...Qrows] = questionFileContent
-      .split('\n')
-      .map((row: string) => row.split(','))
-      .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
-    const checkKey = entry.entryName.split('_')[1];
-    switch (checkKey) {
-      case 'question.csv':
-        validateQuestionCsv(entry.entryName, process_id, Qheader, Qrows, templateHeader, mediaContent);
-        break;
-      case 'questionSet.csv':
-        validateQuestionSetCsv(entry.entryName, process_id, Qheader, Qrows, templateHeader);
-        break;
-      case 'content.csv':
-        validateContentCsv(entry.entryName, process_id, Qheader, Qrows, templateHeader, mediaContent);
-        return true;
-      default:
-        await markProcessAsFailed(process_id, 'unsupported_sheet', `Unsupported sheet in file '${entry.entryName}'.`);
-    }
-    return true;
   } catch (error) {
-    const code = _.get(error, 'code', 'UPLOAD_QUESTION_CRON');
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
-    logger.error({ errorMsg, code });
-    await markProcessAsFailed(process_id, 'is failed', errorMsg);
+    logger.error(errorMsg);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: errorMsg,
+      status: 'errored',
+    });
     return false;
   }
 };
 
-const fetchAndExtractZipEntries = async (folderName: string, folderPath: string, fileName: string): Promise<AdmZip.IZipEntry[]> => {
+const fetchAndExtractZipEntries = async (folderName: string): Promise<AdmZip.IZipEntry[]> => {
   try {
-    let s3File;
+    let bulkUploadFolder;
     if (folderName === 'upload') {
-      s3File = await getQuestionSignedUrl(folderPath, fileName);
+      bulkUploadFolder = await getFolderData(`upload/${Process_id}/${FILENAME}`);
     } else {
-      s3File = await getTemplateSignedUrl(fileName);
+      bulkUploadFolder = await getFolderData(`template/${FILENAME}`);
     }
-    if (!s3File.url) {
-      throw new Error('Signed URL is missing or invalid');
-    }
-    const response = await fetch(s3File.url);
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = (await streamToBuffer(bulkUploadFolder)) as Buffer;
     const zip = new AdmZip(buffer);
-
+    logger.info('converted stream to zip entries');
     return zip.getEntries();
   } catch (error) {
     const code = _.get(error, 'code', 'UPLOAD_QUESTION_CRON');
@@ -156,22 +150,143 @@ const fetchAndExtractZipEntries = async (folderName: string, folderPath: string,
   }
 };
 
-const markProcessAsFailed = async (process_id: string, error_status: string, error_message: string) => {
-  await updateProcess(process_id, {
-    error_status,
-    error_message,
-    status: 'failed',
-  });
+const validateQuestionCsv = async (questionEntry: any, mediaEntries: any) => {
+  try {
+    const templateHeader = await getCSVTemplateHeader(questionEntry.entryName);
+    const { header, rows } = getCSVHeaderAndRow(questionEntry);
+    const isValidHeader = await validHeader(questionEntry.entryName, header, templateHeader);
+    if (!isValidHeader) return;
+    const processData = processRow(rows, header);
+    logger.info('header and row process successfully as object');
+    return;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
+    logger.error(errorMsg);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: errorMsg,
+      status: 'errored',
+    });
+  }
 };
 
-function validateQuestionCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[], mediaContent: any) {
-  throw new Error('Function implemented.will be in next PR');
-}
+const validateQuestionSetCsv = async (questionSetEntry: any) => {
+  try {
+    const templateHeader = await getCSVTemplateHeader(questionSetEntry.entryName);
+    const { header, rows } = getCSVHeaderAndRow(questionSetEntry);
+    const isValidHeader = await validHeader(questionSetEntry.entryName, header, templateHeader);
+    if (!isValidHeader) return;
+    const processData = processRow(rows, header);
+    logger.info('header and row process successfully as object');
+    return;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
+    logger.error(errorMsg);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: errorMsg,
+      status: 'errored',
+    });
+  }
+};
 
-function validateQuestionSetCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[]) {
-  throw new Error('Function implemented.will be in next PR');
-}
+const validateContentCsv = async (contentEntry: any, mediaEntries: any) => {
+  try {
+    const templateHeader = await getCSVTemplateHeader(contentEntry.entryName);
+    const { header, rows } = getCSVHeaderAndRow(contentEntry);
+    const isValidHeader = await validHeader(contentEntry.entryName, header, templateHeader);
+    if (!isValidHeader) return;
+    const processData = processRow(rows, header);
+    logger.info('header and row process successfully as object');
+    return;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
+    logger.error(errorMsg);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: errorMsg,
+      status: 'errored',
+    });
+  }
+};
 
-function validateContentCsv(entryName: any, process_id: string, Qheader: any, Qrows: any, templateHeader: string[], mediaContent: any) {
-  throw new Error('Function implemented.will be in next PR');
-}
+const processRow = (rows: string[][], header: string[]) => {
+  return rows.map((row) =>
+    row.reduce(
+      (acc, cell, index) => {
+        const headerName = header[index].replace(/\r/g, '');
+        const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
+        if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid')) {
+          acc.body = acc.body || {};
+          acc.body[headerName] = cellValue;
+        } else if (headerName.includes('media')) {
+          acc.media_files = acc.media_files || [];
+          if (cellValue) acc.media_files.push(cellValue);
+        } else if (headerName.includes('QID')) {
+          acc['question_id'] = cellValue;
+        } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
+          acc[headerName] = Number(cellValue);
+        } else if (headerName.includes('sub_skill_x+x')) {
+          acc['sub_skill_xx'] = cellValue;
+        } else if (headerName.includes('sub_skill_x+0')) {
+          acc['sub_skill_x0'] = cellValue;
+        } else {
+          acc[headerName] = cellValue;
+        }
+        return acc;
+      },
+      {} as Record<string, any>,
+    ),
+  );
+};
+
+const validHeader = async (entryName: string, header: any, templateHeader: any): Promise<boolean> => {
+  if (header.length !== templateHeader.length) {
+    await updateProcess(Process_id, { error_status: 'invalid_header_length', error_message: `CSV file contains more/less fields compared to the template.`, status: 'failed' });
+    logger.error(`CSV file contains more/less fields compared to the template.`);
+  }
+
+  const validHeader = templateHeader.every((col: any, i: number) => col === header[i]);
+  if (!validHeader) {
+    await updateProcess(Process_id, { error_status: 'invalid_column_name', error_message: `The file '${entryName}' does not match the expected CSV format.`, status: 'failed' });
+    logger.error(`The file '${entryName}' does not match the expected CSV format.`);
+    return false;
+  }
+  logger.info(`${entryName} contain valid header`);
+  return true;
+};
+
+const getCSVTemplateHeader = async (entryName: string) => {
+  const templateZipEntries = await fetchAndExtractZipEntries('template');
+  const templateFileContent = templateZipEntries
+    .find((t) => t.entryName === entryName)
+    ?.getData()
+    .toString('utf8');
+  if (!templateFileContent) {
+    await updateProcess(Process_id, { error_status: 'invalid_template', error_message: `Template for '${entryName}' not found.`, status: 'failed' });
+    logger.error(`The file '${entryName}' does not match the expected CSV format.`);
+    return false;
+  }
+  const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
+  logger.info('template header extracted');
+  return templateHeader;
+};
+const getCSVHeaderAndRow = (csvEntries: any) => {
+  const [header, ...rows] = csvEntries
+    .getData()
+    .toString('utf8')
+    .split('\n')
+    .map((row: string) => row.split(','))
+    .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
+  logger.info('header and rows are extracted');
+  return { header, rows };
+};
+
+const streamToBuffer = (stream: any) => {
+  return new Promise((resolve, reject) => {
+    const chunks: any = [];
+    stream.on('data', (chunk: any) => chunks.push(chunk));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+};
