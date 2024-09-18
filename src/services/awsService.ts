@@ -17,15 +17,14 @@ export const getFolderData = async (filePath: string) => {
   return response.Body;
 };
 
-export const uploadFile = async (filesData: any, type: string) => {
-  const fileName = filesData.entryName.split('/')[1];
+export const uploadFiles = async (filesData: any, type: string) => {
   const command = new PutObjectCommand({
     Bucket: bucketName,
-    Key: `media/${type}/${fileName}`,
+    Key: `media/${type}/${filesData.entryName}`,
     Body: filesData.getData(),
   });
-  await s3Client.send(command);
-  return { fileName: fileName, src: `media/${type}` };
+  const response = s3Client.send(command);
+  return response;
 };
 
 export const getQuestionSignedUrl = async (folderName: string, fileName: string) => {
