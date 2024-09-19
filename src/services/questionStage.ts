@@ -1,5 +1,6 @@
 import { QuestionStage } from '../models/questionStage';
 import { Optional } from 'sequelize';
+import logger from '../utils/logger';
 
 export const createQuestionStage = async (req: Optional<any, any>[]): Promise<any> => {
   try {

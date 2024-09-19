@@ -1,5 +1,6 @@
 import { ContentStage } from '../models/contentStage';
 import { Optional } from 'sequelize';
+import logger from '../utils/logger';
 
 export const createContentSage = async (req: Optional<any, any>[]): Promise<any> => {
   try {
