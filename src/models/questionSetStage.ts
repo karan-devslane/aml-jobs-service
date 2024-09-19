@@ -74,7 +74,7 @@ export const QuestionSetStage = AppDataSource.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('progress', 'errored', 'successed'),
+      type: DataTypes.ENUM('progress', 'errored', 'success'),
       allowNull: true,
     },
     media: {

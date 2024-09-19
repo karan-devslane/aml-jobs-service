@@ -1,26 +1,22 @@
-import { QuestionSetStage } from '../models/questionSetSatge';
-import { AppDataSource } from '../config';
+import { QuestionSetStage } from '../models/questionSetStage';
 import { Optional } from 'sequelize';
+import logger from '../utils/logger';
 
-//create service for QuestionSet
-export const createQuestionSetSatge = async (req: Optional<any, string>[]): Promise<any> => {
+export const createQuestionSetStage = async (req: Optional<any, any>[]): Promise<any> => {
   try {
     const stagingData = await QuestionSetStage.bulkCreate(req);
-
     const [dataValues] = stagingData;
-    return { error: false, message: 'success', dataValues };
+    return { dataValues };
   } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to create a record' : '';
-    return { error: true, message: errorMsg };
+    logger.error(error);
   }
 };
 
 //get Single QuestionSet by meta data
 export const questionSetStageMetaData = async (req: any): Promise<any> => {
   try {
-    const questionSet = await QuestionSetStage.findAll({ where: req });
-    return { questionSet };
+    const questionSets = await QuestionSetStage.findAll({ where: req });
+    return { questionSets };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

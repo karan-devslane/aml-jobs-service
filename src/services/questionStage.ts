@@ -1,25 +1,21 @@
 import { QuestionStage } from '../models/questionStage';
 import { Optional } from 'sequelize';
 
-//create service for Question
-export const createQuestionStage = async (req: Optional<any, string>[]): Promise<any> => {
+export const createQuestionStage = async (req: Optional<any, any>[]): Promise<any> => {
   try {
     const stagingData = await QuestionStage.bulkCreate(req);
-
     const [dataValues] = stagingData;
-    return { error: false, message: 'success', dataValues };
+    return { dataValues };
   } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to create a record' : '';
-    return { error: true, message: errorMsg };
+    logger.error(error);
   }
 };
 
 //get Single Question by meta data
 export const questionStageMetaData = async (req: any): Promise<any> => {
   try {
-    const question = await QuestionStage.findAll({ where: req });
-    return { question };
+    const questions = await QuestionStage.findAll({ where: req });
+    return { questions };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

@@ -26,7 +26,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: true,
     },
     sequence: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     question_type: {
@@ -50,11 +50,11 @@ export const QuestionStage = AppDataSource.define(
       allowNull: true,
     },
     L2_skill: {
-      type: DataTypes.STRING,
+      type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
     L3_skill: {
-      type: DataTypes.STRING,
+      type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
     gradient: {
@@ -74,7 +74,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: true,
     },
     benchmark_time: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     sub_skill: {
@@ -97,12 +97,12 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
-    media: {
+    media_files: {
       type: DataTypes.JSONB,
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('progress', 'errored', 'successed'),
+      type: DataTypes.ENUM('progress', 'errored', 'success'),
       allowNull: true,
     },
     error_info: {

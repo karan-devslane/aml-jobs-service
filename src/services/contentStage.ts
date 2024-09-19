@@ -5,19 +5,17 @@ export const createContentSage = async (req: Optional<any, any>[]): Promise<any>
   try {
     const stagingData = await ContentStage.bulkCreate(req);
     const [dataValues] = stagingData;
-    return { error: false, message: 'success', dataValues };
+    return { dataValues };
   } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to create a record' : '';
-    return { error: true, message: errorMsg };
+    logger.error(error);
   }
 };
 
 //get Single Content by meta data
 export const contentStageMetaData = async (req: any): Promise<any> => {
   try {
-    const content = await ContentStage.findAll({ where: req });
-    return { content };
+    const contents = await ContentStage.findAll({ where: req });
+    return { contents };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

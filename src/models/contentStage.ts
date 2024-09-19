@@ -57,7 +57,7 @@ export const ContentStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    media: {
+    media_files: {
       type: DataTypes.JSONB,
       allowNull: true,
     },
