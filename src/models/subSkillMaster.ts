@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { AppDataSource } from '../config';
 
-// Define the subskillMaster model
 export const SubSkillMaster = AppDataSource.define(
   'sub_skill_master',
   {
