@@ -1,5 +1,6 @@
 import logger from '../../utils/logger';
 import * as _ from 'lodash';
+import * as uuid from 'uuid';
 import { getFolderMetaData, getFolderData, uploadFile } from '../../services/awsService';
 import { getProcessByMetaData, updateProcess } from '../../services/process';
 import path from 'path';
@@ -13,6 +14,7 @@ import { QuestionStage } from '../../models/questionStage';
 import { QuestionSetStage } from '../../models/questionSetStage';
 import { ContentStage } from '../../models/contentStage';
 import { createQuestion } from '../../services/question';
+import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../../services/service';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval, grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields } = appConfiguration;
 let FILENAME: string;
@@ -113,7 +115,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
     });
     logger.error('Zip validate:: The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
   } else {
-    await updateProcess(Process_id, { status: 'progress', updated_by: 1 });
+    await updateProcess(Process_id, { status: 'open', updated_by: 1 });
     logger.info(`Zip validate:: Bulk upload folder found and valid zip for process id:${Process_id}`);
     await validateCSVFilesFormatInZip();
   }
@@ -124,7 +126,7 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
     const ZipEntries = await fetchAndExtractZipEntries('upload');
     const mediaZipEntries = ZipEntries.filter((e) => !e.entryName.endsWith('.csv'));
     const csvZipEntries = ZipEntries.filter((e) => e.entryName.endsWith('.csv'));
-    let isValidType,
+    let isValidType = true,
       isValidName = true;
     for (const entry of csvZipEntries) {
       if (entry.isDirectory && entry.entryName.includes('.csv')) {
@@ -285,7 +287,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
 
     const insertToMainQuestionSet = await insertStageDataToQuestionTable();
     if (!insertToMainQuestionSet) {
-      logger.error(`${Process_id} staging data are invalid for main question insert`);
+      logger.error(`Question:: ${Process_id} staging data are invalid for main question insert`);
       await updateProcess(Process_id, {
         error_status: 'main_insert_error',
         error_message: `Question:: ${Process_id} staging data are invalid for main question insert`,
@@ -364,7 +366,7 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       logger.error(`${Process_id} staging data are invalid for main question set insert`);
       await updateProcess(Process_id, {
         error_status: 'main_insert_error',
-        error_message: `Question:: ${Process_id} staging data are invalid for main question set insert`,
+        error_message: `Question set:: ${Process_id} staging data are invalid for main question set insert`,
         status: 'errored',
       });
       return false;
@@ -648,7 +650,7 @@ const validateContentStageData = async () => {
 
 const insertStageDataToQuestionTable = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
-  const insertData = getAllQuestionStage.questions;
+  const insertData = await formatStagingDataForMainInsert(getAllQuestionStage.questions);
   const contentInsert = await createQuestion(insertData);
   if (contentInsert) {
     logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
@@ -665,7 +667,7 @@ const insertStageDataToQuestionTable = async () => {
 
 const insertStageDataToQuestionSetTable = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
-  const insertData = getAllQuestionSetStage.questionSets;
+  const insertData = await formatStagingDataForMainInsert(getAllQuestionSetStage.questionSets);
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
     logger.info({ message: `Insert main:: ${Process_id} question set bulk data inserted successfully to main table ` });
@@ -682,7 +684,7 @@ const insertStageDataToQuestionSetTable = async () => {
 
 const insertStageDataToContentTable = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
-  const insertData = getAllContentStage.contents;
+  const insertData = await formatStagingDataForMainInsert(getAllContentStage.contents);
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
     logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
@@ -697,85 +699,17 @@ const insertStageDataToContentTable = async () => {
   return false;
 };
 
-const processRow = (rows: string[][], header: string[]) => {
-  return rows.map((row) =>
-    row.reduce(
-      (acc, cell, index) => {
-        const headerName = header[index].replace(/\r/g, '');
-        const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
-        if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid')) {
-          acc.body = acc.body || {};
-          acc.body[headerName] = cellValue;
-        } else if (headerName.includes('L2_skill') || headerName.includes('L3_skill') || headerName.includes('sub_skill')) {
-          acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
-        } else if (headerName.includes('media')) {
-          acc.media_files = acc.media_files || [];
-          if (cellValue) acc.media_files.push(cellValue);
-        } else if (headerName.includes('QID')) {
-          acc['question_id'] = cellValue;
-        } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
-          acc[headerName] = Number(cellValue);
-        } else if (headerName.includes('sub_skill_x+x')) {
-          acc['sub_skill_xx'] = cellValue;
-        } else if (headerName.includes('sub_skill_x+0')) {
-          acc['sub_skill_x0'] = cellValue;
-        } else if (headerName.includes('is_atomic')) {
-          acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
-        } else {
-          acc[headerName] = cellValue;
-        }
-        acc.process_id = Process_id;
-        return acc;
-      },
-      {} as Record<string, any>,
-    ),
-  );
-};
-
-const ProcessStageDataQuestion = (questionsData: any) => {
-  const fieldMapping: any = {
-    'Grid-1_add': grid1AddFields.push('grid1_pre_fills_top', 'grid1_pre_fills_result'),
-    'Gid-1_sub': grid1SubFields.push('grid1_pre_fills_top', 'grid1_pre_fills_result'),
-    'Grid-1_multiple': grid1MultipleFields.push('grid1_multiply_intermediate_steps_prefills', 'grid1_pre_fills_result'),
-    'Grid-1_division': grid1DivFields.push('grid1_pre_fills_remainder', 'grid1_pre_fills_quotient', 'grid1_div_intermediate_steps_prefills'),
-    'Grid-2': grid2Fields.push('grid2_pre_fills_n1', 'grid2_pre_fills_n2'),
-    mcq: mcqFields,
-    fib: fibFields,
+const preloadData = async () => {
+  const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
+  logger.info('Preloaded:: pre loading metadata from table.');
+  return {
+    boards,
+    classes,
+    skills,
+    tenants,
+    subSkills,
+    repositories,
   };
-  questionsData.forEach((question: any) => {
-    const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.L1_skill}` : question.question_type;
-    const relevantFields = fieldMapping[questionType];
-    const filteredBody: any = {};
-    relevantFields.forEach((field: any) => {
-      if (question.body[field] !== undefined) {
-        filteredBody[field] = question.body[field];
-      }
-    });
-    question.body = filteredBody;
-  });
-  return questionsData;
-};
-
-const validMedia = async (processedCSVData: any, mediaEntries: any[], type: string) => {
-  const mediaCsvData = await Promise.all(
-    processedCSVData.map(async (p: any) => {
-      const mediaFiles = await Promise.all(
-        p.media_files.map(async (o: string) => {
-          const foundMedia = mediaEntries.slice(1).find((media: any) => {
-            return media.entryName.split('/')[1] === o;
-          });
-          if (foundMedia) {
-            const mediaData = await uploadFile(foundMedia, type);
-            return mediaData;
-          }
-          return null;
-        }),
-      );
-      p.media_files = mediaFiles.filter((media: any) => media !== null);
-      return p;
-    }),
-  );
-  return mediaCsvData;
 };
 
 const getCSVTemplateHeader = async (entryName: string) => {
@@ -820,6 +754,283 @@ const validHeader = async (entryName: string, header: any, templateHeader: any):
   }
   logger.info(`Header validate:: ${entryName} contain valid header`);
   return true;
+};
+
+const processRow = (rows: string[][], header: string[]) => {
+  return rows.map((row) =>
+    row.reduce(
+      (acc, cell, index) => {
+        const headerName = header[index].replace(/\r/g, '');
+        const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
+        if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
+          acc.body = acc.body || {};
+          acc.body[headerName] = cellValue;
+        } else if (headerName.includes('L2_skill') || headerName.includes('L3_skill') || headerName.includes('sub_skill')) {
+          acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
+        } else if (headerName.includes('media')) {
+          acc.media_files = acc.media_files || [];
+          if (cellValue) acc.media_files.push(cellValue);
+        } else if (headerName.includes('QID')) {
+          acc['question_id'] = cellValue;
+        } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
+          acc[headerName] = Number(cellValue);
+        } else if (headerName.includes('sub_skill_x+x')) {
+          acc['sub_skill_xx'] = cellValue;
+        } else if (headerName.includes('sub_skill_x+0')) {
+          acc['sub_skill_x0'] = cellValue;
+        } else if (headerName.includes('is_atomic')) {
+          acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
+        } else {
+          acc[headerName] = cellValue;
+        }
+        acc.process_id = Process_id;
+        return acc;
+      },
+      {} as Record<string, any>,
+    ),
+  );
+};
+
+const ProcessStageDataQuestion = (questionsData: any) => {
+  const fieldMapping: any = {
+    'Grid-1_add': [...grid1AddFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
+    'Gid-1_sub': [...grid1SubFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
+    'Grid-1_multiple': [...grid1MultipleFields, 'grid1_multiply_intermediate_steps_prefills', 'grid1_pre_fills_result'],
+    'Grid-1_division': [...grid1DivFields, 'grid1_pre_fills_remainder', 'grid1_pre_fills_quotient', 'grid1_div_intermediate_steps_prefills'],
+    'Grid-2': [...grid2Fields, 'grid2_pre_fills_n1', 'grid2_pre_fills_n2'],
+    mcq: mcqFields,
+    fib: fibFields,
+  };
+  questionsData.forEach((question: any) => {
+    const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.L1_skill}` : question.question_type;
+    const relevantFields = fieldMapping[questionType];
+    const filteredBody: any = {};
+    relevantFields.forEach((field: any) => {
+      if (question.body[field] !== undefined) {
+        filteredBody[field] = question.body[field];
+      }
+    });
+    question.body = filteredBody;
+  });
+  return questionsData;
+};
+
+const validMedia = async (processedCSVData: any, mediaEntries: any[], type: string) => {
+  const mediaCsvData = await Promise.all(
+    processedCSVData.map(async (p: any) => {
+      const mediaFiles = await Promise.all(
+        p.media_files.map(async (o: string) => {
+          const foundMedia = mediaEntries.slice(1).find((media: any) => {
+            return media.entryName.split('/')[1] === o;
+          });
+          if (foundMedia) {
+            const mediaData = await uploadFile(foundMedia, type);
+            return mediaData;
+          }
+          return null;
+        }),
+      );
+      p.media_files = mediaFiles.filter((media: any) => media !== null);
+      return p;
+    }),
+  );
+  return mediaCsvData;
+};
+
+const formatStagingDataForMainInsert = async (stageData: any[]) => {
+  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
+
+  const transformedData = stageData.map((obj) => {
+    const {
+      grid_fib_n1,
+      grid_fib_n2,
+      mcq_option_1,
+      mcq_option_2,
+      mcq_option_3,
+      mcq_option_4,
+      mcq_option_5,
+      mcq_option_6,
+      mcq_correct_options,
+      sub_skill_carry,
+      sub_skill_procedural,
+      sub_skill_xx,
+      sub_skill_x0,
+    } = obj.body;
+    return {
+      identifier: uuid.v4(),
+      content_id: obj.content_id,
+      question_id: obj.question_id,
+      question_set_id: obj.question_set_id,
+      question_type: obj.type,
+      operation: obj.L1_skill,
+      hint: obj.hint,
+      sequence: obj.sequence,
+      name: { en: obj.title },
+      description: { en: obj.description },
+      tenant: {
+        name: { en: 'AML' },
+        id: tenants.get('AML'),
+      },
+      repository: {
+        name: { en: obj.repository_name },
+        id: repositories.get(obj.repository_name),
+      },
+      taxonomy: {
+        board: {
+          en: obj.board,
+          id: boards.get(obj.board) || null,
+        },
+        class: {
+          en: obj.class,
+          id: classes.get(obj.class) || null,
+        },
+        l1_skill: {
+          en: obj.L1_skill,
+          id: skills.get(obj.L1_skill) || null,
+        },
+        l2_skill: obj.L2_skill.map((skill: string) => ({
+          en: skill,
+          id: skills.get(skill) || null,
+        })),
+        l3_skill: obj.L3_skill.map((skill: string) => ({
+          en: skill,
+          id: skills.get(skill) || null,
+        })),
+      },
+      sub_skills: obj.sub_skills.map((skill: string) => ({
+        en: skill,
+        id: subSkills.get(skill) || null,
+      })),
+      question_body: {
+        numbers: [grid_fib_n1, grid_fib_n2],
+        options: [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6],
+        correct_option: mcq_correct_options,
+        answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2),
+        wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
+      },
+      benchmark_time: obj.benchmark_time,
+      purpose: obj.purpose,
+      is_atomic: obj.is_atomic,
+      gradient: obj.gradient,
+      group_name: obj.group_name,
+      status: 'draft',
+      media:
+        obj.media_files.length > 0
+          ? obj.media_files.map((media: any) => ({
+              src: media.src,
+              baseUrl: media.baseUrl,
+              mimeType: media.mimeType,
+              mediaType: media.mediaType,
+            }))
+          : [],
+      created_by: 1,
+      is_active: true,
+    };
+  });
+  logger.info('Data transfer:: staging Data transferred as per original format');
+  return transformedData;
+};
+
+const getAnswer = (skill: string, num1: number, num2: number) => {
+  switch (skill) {
+    case 'multiplication':
+      return multipleSolutionProcess(num1, num2);
+    case 'division':
+      return divisionSolutionProcess(num1, num2);
+    case 'addition':
+      logger.info('Add:: got a value for addition  numbers');
+      return num1 + num2;
+    case 'subtraction':
+      logger.info('sub:: got a value for subtraction  numbers');
+      return num1 - num2;
+    default:
+      return undefined;
+  }
+};
+
+const convertWrongAnswerSubSkills = (inputData: any) => {
+  const wrongAnswers = [];
+
+  for (const [key, value] of Object.entries(inputData)) {
+    const numbers = (value as number[]).map(Number).filter((n: any) => !isNaN(n) && n !== 0);
+    if (numbers.length > 0) {
+      wrongAnswers.push({
+        value: numbers,
+        sub_skill_id: 1,
+        subskillname: key,
+      });
+    }
+  }
+  logger.info('Wrong answer:: wrong answer mapped to sub skills');
+  return wrongAnswers;
+};
+
+const multipleSolutionProcess = (num1: number, num2: number) => {
+  const num1Arr = num1.toString().split('').map(Number);
+  const num2Arr = num2.toString().split('').map(Number);
+  const resultArray = Array(num1Arr.length + num2Arr.length).fill(0);
+
+  const intermediateSteps = [];
+  for (let i = num1Arr.length - 1; i >= 0; i--) {
+    for (let j = num2Arr.length - 1; j >= 0; j--) {
+      const mulResult = num1Arr[i] * num2Arr[j];
+      const position = i + j + 1; // Position in the result array
+
+      const sum = resultArray[position] + mulResult;
+      resultArray[position] = sum % 10; // store the single digit
+      resultArray[position - 1] += Math.floor(sum / 10); // handle carry over
+    }
+  }
+
+  // Remove leading zeros
+  while (resultArray[0] === 0) resultArray.shift();
+
+  const finalResult = resultArray.join('');
+
+  // Capture intermediate steps for prefill visualization
+  for (let i = 0; i < num2Arr.length; i++) {
+    const partialProduct = (num1 * num2Arr[i]).toString() + '0'.repeat(i);
+    intermediateSteps.push(partialProduct);
+  }
+  logger.info('Multiple:: got a value and steps for multiplication of numbers');
+  return {
+    prefill: intermediateSteps,
+    finalResult,
+  };
+};
+
+const divisionSolutionProcess = (dividend: number, divisor: number) => {
+  const dividendArr = dividend.toString().split('').map(Number);
+  let partialDividend = 0;
+  let quotient = '';
+  const intermediateSteps = [];
+
+  for (let i = 0; i < dividendArr.length; i++) {
+    partialDividend = partialDividend * 10 + dividendArr[i];
+    const currentQuotient = Math.floor(partialDividend / divisor);
+    const currentRemainder = partialDividend % divisor;
+
+    // Update quotient and carry the remainder
+    quotient += currentQuotient.toString();
+
+    intermediateSteps.push({
+      partialDividend: partialDividend.toString(),
+      partialQuotient: currentQuotient.toString(),
+      partialRemainder: currentRemainder.toString(),
+    });
+
+    partialDividend = currentRemainder;
+  }
+
+  // Remove leading zeros in the quotient
+  quotient = quotient.replace(/^0+/, '');
+
+  logger.info('Division::  got a value and steps for division of numbers');
+  return {
+    quotient,
+    remainder: partialDividend,
+    intermediate_steps: intermediateSteps,
+  };
 };
 
 const fetchAndExtractZipEntries = async (folderName: string): Promise<AdmZip.IZipEntry[]> => {

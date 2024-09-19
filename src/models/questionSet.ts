@@ -20,7 +20,7 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.JSONB,
       allowNull: true,
     },
-    qsid: {
+    question_set_id: {
       type: DataTypes.STRING,
       allowNull: false,
     },

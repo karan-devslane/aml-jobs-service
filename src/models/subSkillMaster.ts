@@ -1,8 +1,9 @@
 import { DataTypes } from 'sequelize';
 import { AppDataSource } from '../config';
 
-export const Content = AppDataSource.define(
-  'content',
+// Define the subskillMaster model
+export const SubSkillMaster = AppDataSource.define(
+  'sub_skill_master',
   {
     id: {
       type: DataTypes.INTEGER,
@@ -13,45 +14,22 @@ export const Content = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    content_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     name: {
       type: DataTypes.JSONB,
       allowNull: false,
+      unique: true,
     },
     description: {
       type: DataTypes.JSONB,
-      allowNull: false,
-    },
-    tenant: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-    },
-    repository: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-    },
-    taxonomy: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-    },
-    sub_skills: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-    },
-    gradient: {
-      type: DataTypes.STRING,
       allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('draft', 'live'),
-      allowNull: true,
+      allowNull: false,
     },
-    media: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
     },
     created_by: {
       type: DataTypes.STRING,
@@ -61,13 +39,9 @@ export const Content = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    is_active: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-    },
   },
   {
-    tableName: 'content',
+    tableName: 'sub_skill_master',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',

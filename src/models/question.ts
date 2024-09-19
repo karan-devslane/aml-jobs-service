@@ -13,7 +13,7 @@ export const Question = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    qid: {
+    question_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -25,7 +25,7 @@ export const Question = AppDataSource.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    type: {
+    question_type: {
       type: DataTypes.ENUM('Grid-1', 'mcq', 'fib', 'Grid-2'),
       allowNull: false,
     },
