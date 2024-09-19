@@ -25,14 +25,14 @@ export const scheduleJob = async () => {
   try {
     for (const process of getAllProcess) {
       const { process_id, fileName, created_at } = process;
-      logger.info(`Starting bulk upload job for process id :${process_id}.`);
+      logger.info(`Start:: bulk upload job for process id :${process_id}.`);
       Process_id = process_id;
       const IsStaleProcess = await markStaleProcessesAsErrored(created_at);
       if (IsStaleProcess) continue;
       FILENAME = fileName;
       const folderPath = `upload/${process_id}`;
       const bulkUploadMetadata = await getFolderMetaData(folderPath);
-      logger.info(`Starting bulk upload folder validation for process id :${process_id}.`);
+      logger.info(`Start:: bulk upload folder validation for process id :${process_id}.`);
       await validateZipFile(bulkUploadMetadata);
     }
   } catch (error) {
@@ -50,7 +50,7 @@ const markStaleProcessesAsErrored = async (created_at: Date): Promise<boolean> =
       error_message: 'The uploaded zip folder is empty, please ensure a valid upload file.',
       status: 'failed',
     });
-    logger.error('The uploaded zip folder is empty, please ensure a valid upload file.');
+    logger.error('Stale process:: The uploaded zip folder is empty, please ensure a valid upload file.');
     return true;
   }
   return false;
@@ -70,10 +70,10 @@ const handleFailedProcess = async () => {
       const isSuccessStageProcess = await checkStagingProcess();
       if (!isSuccessStageProcess) {
         await updateProcess(Process_id, { status: 'errored', error_status: 'errored', error_message: 'The csv Data is invalid format or errored fields.Re upload file for new process' });
-        logger.info({ message: `The csv Data is invalid format or errored fields for process id: ${process_id}` });
+        logger.info({ message: `Re-open process:: The csv Data is invalid format or errored fields for process id: ${process_id}` });
       } else {
         await updateProcess(Process_id, { status: 'completed' });
-        logger.info({ message: `${Process_id} Process completed successfully.` });
+        logger.info({ message: `Re-open process:: ${Process_id} Process completed successfully.` });
       }
     }
   }
@@ -82,17 +82,17 @@ const handleFailedProcess = async () => {
 const checkStagingProcess = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
   if (_.isEmpty(getAllQuestionStage.questions)) {
-    logger.info(`process id : ${Process_id} ,the csv Data is invalid format or errored fields`);
+    logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
     return false;
   } else {
     const getAllQuestionSetStage = await questionSetStageMetaData({ status: 'success', process_id: Process_id });
     if (_.isEmpty(getAllQuestionSetStage.questions)) {
-      logger.info(`process id : ${Process_id} ,the csv Data is invalid format or errored fields`);
+      logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
       return false;
     } else {
       const getAllContentStage = await contentStageMetaData({ status: 'success', process_id: Process_id });
       if (_.isEmpty(getAllContentStage.questions)) {
-        logger.info(`process id : ${Process_id} ,the csv Data is invalid format or errored fields`);
+        logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
         return false;
       }
     }
@@ -111,10 +111,10 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
       error_message: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.',
       status: 'failed',
     });
-    logger.error('The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
+    logger.error('Zip validate:: The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.');
   } else {
     await updateProcess(Process_id, { status: 'progress', updated_by: 1 });
-    logger.info(`Bulk upload folder found and valid zip for process id:${Process_id}`);
+    logger.info(`Zip validate:: Bulk upload folder found and valid zip for process id:${Process_id}`);
     await validateCSVFilesFormatInZip();
   }
 };
@@ -133,7 +133,7 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
           error_message: 'The uploaded ZIP folder contains valid files with valid format. Follow the template format.',
           status: 'failed',
         });
-        logger.error('The uploaded ZIP folder contains valid files with valid format. Follow the template format.');
+        logger.error('File Format:: The uploaded ZIP folder contains valid files with valid format. Follow the template format.');
         isValidType = false;
       }
       if (!csvFileName.includes(entry.entryName)) {
@@ -142,11 +142,11 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
           error_message: `The uploaded file '${entry.entryName}' is not a valid file name.`,
           status: 'failed',
         });
-        logger.error(`The uploaded file '${entry.entryName}' is not a valid file name.`);
+        logger.error(`File Format:: The uploaded file '${entry.entryName}' is not a valid file name.`);
         isValidName = false;
       }
     }
-    logger.info('every csv file have valid file name');
+    logger.info('File Format:: every csv file have valid file name');
     if (isValidName && isValidType) {
       const validCSV = await handleCSVEntries(csvZipEntries, mediaZipEntries);
       return validCSV;
@@ -170,16 +170,19 @@ const handleCSVEntries = async (csvFilesEntries: any, mediaEntires: any): Promis
       const checkKey = entry.entryName.split('_')[1];
       switch (checkKey) {
         case 'question.csv': {
+          logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionData = await validateQuestionCsvData(entry, mediaEntires);
           if (!isValidQuestionData) continue;
           break;
         }
         case 'questionSet.csv': {
+          logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionSetData = await validateQuestionSetCsvData(entry);
           if (!isValidQuestionSetData) continue;
           break;
         }
         case 'content.csv': {
+          logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionContentData = await validateContentCsvData(entry, mediaEntires);
           if (!isValidQuestionContentData) continue;
           break;
@@ -212,31 +215,31 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
     const templateHeader = await getCSVTemplateHeader(questionEntry.entryName);
     const { header, rows } = getCSVHeaderAndRow(questionEntry);
     if (!templateHeader && !header && !rows) {
-      logger.error('Question::  Template header, header, or rows are missing');
+      logger.error('Question:: Template header, header, or rows are missing');
       return false;
     }
 
     const isValidHeader = await validHeader(questionEntry.entryName, header, templateHeader);
     if (!isValidHeader) {
-      logger.error('Question ::  Header validation failed');
+      logger.error('Question:: Header validation failed');
       return false;
     }
 
     const processData = processRow(rows, header);
     if (!processData || processData.length === 0) {
-      logger.error('Question ::  Row processing failed or returned empty data');
+      logger.error('Question:: Row processing failed or returned empty data');
       await updateProcess(Process_id, {
         error_status: 'process_error',
-        error_message: 'Question :: Row processing failed or returned empty data',
+        error_message: 'Question:: Row processing failed or returned empty data',
         status: 'errored',
       });
       return false;
     }
-    logger.info('Question :: header and row process successfully');
+    logger.info('Question:: header and row process successfully');
 
     const processData2 = ProcessStageDataQuestion(processData);
     if (!processData2 || processData2.length === 0) {
-      logger.error('Question ::  Stage 2 data processing failed or returned empty data');
+      logger.error('Question::  Stage 2 data processing failed or returned empty data');
       await updateProcess(Process_id, {
         error_status: 'process_stage_error',
         error_message: 'Question :: Stage 2 data processing failed or returned empty data',
@@ -244,26 +247,26 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       });
       return false;
     }
-    logger.info('Question :: header and row process-2 successfully');
+    logger.info('Question:: header and row process-2 successfully');
 
     const updatedProcessData = await validMedia(processData2, mediaEntries, 'question');
     if (!updatedProcessData || updatedProcessData.length === 0) {
-      logger.error('Question ::  Media validation or update failed');
+      logger.error('Question::  Media validation or update failed');
       await updateProcess(Process_id, {
         error_status: 'media_validation_error',
-        error_message: 'Question :: Media validation or update failed',
+        error_message: 'Question:: Media validation or update failed',
         status: 'errored',
       });
       return false;
     }
-    logger.info('Question :: Media inserted and updated in the process data');
+    logger.info('Question:: Media inserted and updated in the process data');
 
     const stageProcessData = await insertProcessDataToQuestionStaging(updatedProcessData);
     if (!stageProcessData) {
       logger.error('Question:: Failed to insert process data into staging');
       await updateProcess(Process_id, {
         error_status: 'staging_insert_error',
-        error_message: 'Question::Failed to insert process data into staging',
+        error_message: 'Question:: Failed to insert process data into staging',
         status: 'errored',
       });
       return false;
@@ -274,7 +277,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       logger.error(`Question:: ${Process_id} staging data are invalid`);
       await updateProcess(Process_id, {
         error_status: 'staging_validation_error',
-        error_message: `Question::${Process_id} staging data are invalid`,
+        error_message: `Question:: ${Process_id} staging data are invalid`,
         status: 'errored',
       });
       return false;
@@ -285,7 +288,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       logger.error(`${Process_id} staging data are invalid for main question insert`);
       await updateProcess(Process_id, {
         error_status: 'main_insert_error',
-        error_message: `Question::${Process_id} staging data are invalid for main question insert`,
+        error_message: `Question:: ${Process_id} staging data are invalid for main question insert`,
         status: 'errored',
       });
       return false;
@@ -293,7 +296,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
 
     await updateProcess(Process_id, { status: 'completed' });
     await QuestionStage.truncate({ restartIdentity: true });
-    logger.info(`Question bulk upload completed successfully for Process ID: ${Process_id}`);
+    logger.info(`Question:: bulk upload completed successfully for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -350,7 +353,7 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       logger.error(`Question set:: ${Process_id} staging data are invalid`);
       await updateProcess(Process_id, {
         error_status: 'staging_validation_error',
-        error_message: `Question set::${Process_id} staging data are invalid`,
+        error_message: `Question set:: ${Process_id} staging data are invalid`,
         status: 'errored',
       });
       return false;
@@ -361,7 +364,7 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       logger.error(`${Process_id} staging data are invalid for main question set insert`);
       await updateProcess(Process_id, {
         error_status: 'main_insert_error',
-        error_message: `Question::${Process_id} staging data are invalid for main question set insert`,
+        error_message: `Question:: ${Process_id} staging data are invalid for main question set insert`,
         status: 'errored',
       });
       return false;
@@ -386,19 +389,19 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
     const templateHeader = await getCSVTemplateHeader(contentEntry.entryName);
     const { header, rows } = getCSVHeaderAndRow(contentEntry);
     if (!templateHeader && !header && !rows) {
-      logger.error('Content::  Template header, header, or rows are missing');
+      logger.error('Content:: Template header, header, or rows are missing');
       return false;
     }
 
     const isValidHeader = await validHeader(contentEntry.entryName, header, templateHeader);
     if (!isValidHeader) {
-      logger.error('Content::  Header validation failed');
+      logger.error('Content:: Header validation failed');
       return false;
     }
 
     const processData = processRow(rows, header);
     if (!processData || processData.length === 0) {
-      logger.error('Content::  Row processing failed or returned empty data');
+      logger.error('Content:: Row processing failed or returned empty data');
       await updateProcess(Process_id, {
         error_status: 'process_error',
         error_message: 'Content:: Row processing failed or returned empty data',
@@ -410,7 +413,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
 
     const updatedProcessData = await validMedia(processData, mediaEntries, 'content');
     if (!updatedProcessData || updatedProcessData.length === 0) {
-      logger.error('Content::  Media validation or update failed');
+      logger.error('Content:: Media validation or update failed');
       await updateProcess(Process_id, {
         error_status: 'media_validation_error',
         error_message: 'Content:: Media validation or update failed',
@@ -425,7 +428,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       logger.error('Content:: Failed to insert process data into staging');
       await updateProcess(Process_id, {
         error_status: 'staging_insert_error',
-        error_message: 'Content::Failed to insert process data into staging',
+        error_message: 'Content:: Failed to insert process data into staging',
         status: 'errored',
       });
       return false;
@@ -436,7 +439,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       logger.error(`Content:: ${Process_id} staging data are invalid`);
       await updateProcess(Process_id, {
         error_status: 'staging_validation_error',
-        error_message: `Content::${Process_id} staging data are invalid`,
+        error_message: `Content:: ${Process_id} staging data are invalid`,
         status: 'errored',
       });
       return false;
@@ -447,7 +450,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       logger.error(`${Process_id} staging data are invalid for main question insert`);
       await updateProcess(Process_id, {
         error_status: 'main_insert_error',
-        error_message: `Content::${Process_id} staging data are invalid for main question insert`,
+        error_message: `Content:: ${Process_id} staging data are invalid for main question insert`,
         status: 'errored',
       });
       return false;
@@ -455,7 +458,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
 
     await updateProcess(Process_id, { status: 'completed' });
     await ContentStage.truncate({ restartIdentity: true });
-    logger.info(`Content::bulk upload completed successfully for Process ID: ${Process_id}`);
+    logger.info(`Content:: bulk upload completed successfully for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -471,10 +474,10 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
 const insertProcessDataToQuestionStaging = async (insertData: object[]) => {
   const contentStageProcessData = await createQuestionStage(insertData);
   if (contentStageProcessData) {
-    logger.info({ message: `${Process_id} question bulk data inserted successfully to staging table` });
+    logger.info({ message: `Insert Staging:: ${Process_id} question bulk data inserted successfully to staging table` });
     return true;
   } else {
-    logger.error({ message: `${Process_id} question bulk data error in inserting` });
+    logger.error({ message: `Insert Staging:: ${Process_id} question bulk data error in inserting` });
     await updateProcess(Process_id, {
       error_status: 'errored',
       error_message: ' question bulk data error in inserting',
@@ -487,10 +490,10 @@ const insertProcessDataToQuestionStaging = async (insertData: object[]) => {
 const insertProcessDataToQuestionSetStaging = async (insertData: object[]) => {
   const contentStageProcessData = await createQuestionSetStage(insertData);
   if (contentStageProcessData) {
-    logger.info({ message: `${Process_id} question set bulk data inserted successfully to staging table ` });
+    logger.info({ message: `Insert Staging:: ${Process_id} question set bulk data inserted successfully to staging table ` });
     return true;
   } else {
-    logger.error({ message: `${Process_id} question set  bulk data error in inserting` });
+    logger.error({ message: `Insert Staging:: ${Process_id} question set  bulk data error in inserting` });
     await updateProcess(Process_id, {
       error_status: 'errored',
       error_message: ' question set bulk data error in inserting',
@@ -503,10 +506,10 @@ const insertProcessDataToQuestionSetStaging = async (insertData: object[]) => {
 const insertProcessDataToContentStaging = async (insertData: object[]) => {
   const contentStageProcessData = await createContentSage(insertData);
   if (contentStageProcessData) {
-    logger.info({ message: `${Process_id} content bulk data inserted successfully to staging table ` });
+    logger.info({ message: `Insert Staging:: ${Process_id} content bulk data inserted successfully to staging table ` });
     return true;
   } else {
-    logger.error({ message: `${Process_id} content bulk data error in inserting` });
+    logger.error({ message: `Insert Staging:: ${Process_id} content bulk data error in inserting` });
     await updateProcess(Process_id, {
       error_status: 'errored',
       error_message: ' content bulk data error in inserting',
@@ -520,130 +523,127 @@ const validateQuestionStageData = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
   let isUnique, isValid;
   if (_.isEmpty(getAllQuestionStage.questions)) {
-    logger.info(`process id : ${Process_id} ,the csv Data is invalid format or errored fields`);
+    logger.error(`Validate Stage Data:: ${Process_id} ,the csv Data is invalid format or errored fields`);
     return false;
-  } else {
-    for (const question of getAllQuestionStage.questions) {
-      const {
-        dataValues: { id, question_id, question_set_id, question_type, L1_skill, body },
-      } = question;
-      const checkRecord = await questionStageMetaData({ question_id, question_set_id, L1_skill, question_type });
-      if (checkRecord.question.length > 1) {
-        await updateQuestionStage(
-          { id },
-          {
-            status: 'errored',
-            error_info: 'Duplicate question and question_set_id combination found.',
-          },
-        );
-        isUnique = false;
-      } else {
-        isUnique = true;
-      }
-      let requiredFields: string[] = [];
-      const caseKey = question_type === 'Grid-1' ? `${question_type}_${L1_skill}` : question_type;
-      switch (caseKey) {
-        case `Grid-1_add`:
-          requiredFields = grid1AddFields;
-          break;
-        case `Grid-1_sub`:
-          requiredFields = grid1SubFields;
-          break;
-        case `Grid-1_multiple`:
-          requiredFields = grid1MultipleFields;
-          break;
-        case `Grid-1_division`:
-          requiredFields = grid1DivFields;
-          break;
-        case `Grid-2`:
-          requiredFields = grid2Fields;
-          break;
-        case `mcq`:
-          requiredFields = mcqFields;
-          break;
-        case `fib`:
-          requiredFields = fibFields;
-          break;
-        default:
-          requiredFields = [];
-          break;
-      }
-      if (!requiredFields.every((field) => body[field] !== undefined && body[field] !== null && body[field] !== '')) {
-        await updateQuestionStage(
-          { id },
-          {
-            status: 'errored',
-            error_info: `Missing required data: ${requiredFields.join(', ')}`,
-          },
-        );
-        isValid = false;
-      } else {
-        isValid = true;
-      }
-    }
-    logger.info(`process id : ${Process_id} , the staging Data question is valid`);
-    return isUnique && isValid;
   }
+  for (const question of getAllQuestionStage.questions) {
+    const {
+      dataValues: { id, question_id, question_set_id, question_type, L1_skill, body },
+    } = question;
+    const checkRecord = await questionStageMetaData({ question_id, question_set_id, L1_skill, question_type });
+    if (checkRecord.question.length > 1) {
+      await updateQuestionStage(
+        { id },
+        {
+          status: 'errored',
+          error_info: 'Duplicate question and question_set_id combination found.',
+        },
+      );
+      isUnique = false;
+    } else {
+      isUnique = true;
+    }
+    let requiredFields: string[] = [];
+    const caseKey = question_type === 'Grid-1' ? `${question_type}_${L1_skill}` : question_type;
+    switch (caseKey) {
+      case `Grid-1_add`:
+        requiredFields = grid1AddFields;
+        break;
+      case `Grid-1_sub`:
+        requiredFields = grid1SubFields;
+        break;
+      case `Grid-1_multiple`:
+        requiredFields = grid1MultipleFields;
+        break;
+      case `Grid-1_division`:
+        requiredFields = grid1DivFields;
+        break;
+      case `Grid-2`:
+        requiredFields = grid2Fields;
+        break;
+      case `mcq`:
+        requiredFields = mcqFields;
+        break;
+      case `fib`:
+        requiredFields = fibFields;
+        break;
+      default:
+        requiredFields = [];
+        break;
+    }
+    if (!requiredFields.every((field) => body[field] !== undefined && body[field] !== null && body[field] !== '')) {
+      await updateQuestionStage(
+        { id },
+        {
+          status: 'errored',
+          error_info: `Missing required data: ${requiredFields.join(', ')}`,
+        },
+      );
+      isValid = false;
+    } else {
+      isValid = true;
+    }
+  }
+  logger.info(`Validate Stage Data:: ${Process_id} , the staging Data question is valid`);
+  return isUnique && isValid;
 };
 
 const validateQuestionSetStageData = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
   let isValid;
   if (_.isEmpty(getAllQuestionSetStage.questionSet)) {
-    logger.info(`process id : ${Process_id} ,the staging Data is empty invalid format or errored fields`);
+    logger.info(`Validate Stage Data:: ${Process_id} ,the staging Data is empty invalid format or errored fields`);
     return false;
-  } else {
-    for (const question of getAllQuestionSetStage.questionSet) {
-      const {
-        dataValues: { id, question_set_id, L1_skill },
-      } = question;
-      const checkRecord = await questionSetStageMetaData({ question_set_id, L1_skill });
-      if (checkRecord.questionSet.length > 1) {
-        await updateQuestionStage(
-          { id },
-          {
-            status: 'errored',
-            error_info: 'Duplicate question_set_id found.',
-          },
-        );
-        isValid = false;
-      } else {
-        isValid = true;
-      }
-    }
-    logger.info(`process id : ${Process_id} , the staging Data question set is valid`);
-    return isValid;
   }
+  for (const question of getAllQuestionSetStage.questionSet) {
+    const {
+      dataValues: { id, question_set_id, L1_skill },
+    } = question;
+    const checkRecord = await questionSetStageMetaData({ question_set_id, L1_skill });
+    if (checkRecord.questionSet.length > 1) {
+      await updateQuestionStage(
+        { id },
+        {
+          status: 'errored',
+          error_info: 'Duplicate question_set_id found.',
+        },
+      );
+      isValid = false;
+    } else {
+      isValid = true;
+    }
+  }
+  logger.info(`Validate Stage Data:: ${Process_id} , the staging Data question set is valid`);
+  return isValid;
 };
 
 const validateContentStageData = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
   let isValid;
   if (_.isEmpty(getAllContentStage.contents)) {
-    logger.info(`process id : ${Process_id} ,the csv Data is invalid format or errored fields`);
+    logger.info(`Validate Stage Data:: ${Process_id} ,the csv Data is invalid format or errored fields`);
     return false;
-  } else {
-    for (const question of getAllContentStage.contents) {
-      const {
-        dataValues: { id, content_id, L1_skill },
-      } = question;
-      const checkRecord = await contentStageMetaData({ content_id, L1_skill });
-      if (checkRecord.contents.length > 1) {
-        await updateQuestionStage(
-          { id },
-          {
-            status: 'errored',
-            error_info: 'Duplicate content_id found.',
-          },
-        );
-        isValid = false;
-      } else {
-        isValid = true;
-      }
-    }
-    logger.info(`process id : ${Process_id} , the staging Data content is valid`);
-    return isValid;
   }
+  for (const question of getAllContentStage.contents) {
+    const {
+      dataValues: { id, content_id, L1_skill },
+    } = question;
+    const checkRecord = await contentStageMetaData({ content_id, L1_skill });
+    if (checkRecord.contents.length > 1) {
+      await updateQuestionStage(
+        { id },
+        {
+          status: 'errored',
+          error_info: 'Duplicate content_id found.',
+        },
+      );
+      isValid = false;
+    } else {
+      isValid = true;
+    }
+  }
+  logger.info(`Validate Stage Data:: ${Process_id} , the staging Data content is valid`);
+  return isValid;
 };
 
 const insertStageDataToQuestionTable = async () => {
@@ -651,17 +651,16 @@ const insertStageDataToQuestionTable = async () => {
   const insertData = getAllQuestionStage.questions;
   const contentInsert = await createQuestion(insertData);
   if (contentInsert) {
-    logger.info({ message: `${Process_id} content bulk data inserted successfully to main table ` });
+    logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
     return true;
-  } else {
-    logger.error({ message: `${Process_id} content bulk data error in inserting to main table` });
-    await updateProcess(Process_id, {
-      error_status: 'errored',
-      error_message: ' content bulk data error in inserting', //check
-      status: 'errored',
-    });
-    return false;
   }
+  logger.error({ message: `Insert main:: ${Process_id} content bulk data error in inserting to main table` });
+  await updateProcess(Process_id, {
+    error_status: 'errored',
+    error_message: ' content bulk data error in inserting', //check
+    status: 'errored',
+  });
+  return false;
 };
 
 const insertStageDataToQuestionSetTable = async () => {
@@ -669,17 +668,16 @@ const insertStageDataToQuestionSetTable = async () => {
   const insertData = getAllQuestionSetStage.questionSets;
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
-    logger.info({ message: `${Process_id} question set bulk data inserted successfully to main table ` });
+    logger.info({ message: `Insert main:: ${Process_id} question set bulk data inserted successfully to main table ` });
     return true;
-  } else {
-    logger.error({ message: `${Process_id} question set data error in inserting to main table` });
-    await updateProcess(Process_id, {
-      error_status: 'errored',
-      error_message: ' content bulk data error in inserting', //check
-      status: 'errored',
-    });
-    return false;
   }
+  logger.error({ message: `Insert main:: ${Process_id} question set data error in inserting to main table` });
+  await updateProcess(Process_id, {
+    error_status: 'errored',
+    error_message: ' content bulk data error in inserting', //check
+    status: 'errored',
+  });
+  return false;
 };
 
 const insertStageDataToContentTable = async () => {
@@ -687,17 +685,16 @@ const insertStageDataToContentTable = async () => {
   const insertData = getAllContentStage.contents;
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
-    logger.info({ message: `${Process_id} content bulk data inserted successfully to main table ` });
+    logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
     return true;
-  } else {
-    logger.error({ message: `${Process_id} content bulk data error in inserting to main table` });
-    await updateProcess(Process_id, {
-      error_status: 'errored',
-      error_message: ' content bulk data error in inserting', //check
-      status: 'errored',
-    });
-    return false;
   }
+  logger.error({ message: `${Process_id} content bulk data error in inserting to main table` });
+  await updateProcess(Process_id, {
+    error_status: 'errored',
+    error_message: ' content bulk data error in inserting', //check
+    status: 'errored',
+  });
+  return false;
 };
 
 const processRow = (rows: string[][], header: string[]) => {
@@ -789,11 +786,11 @@ const getCSVTemplateHeader = async (entryName: string) => {
     .toString('utf8');
   if (!templateFileContent) {
     await updateProcess(Process_id, { error_status: 'invalid_template', error_message: `Template for '${entryName}' not found.`, status: 'failed' });
-    logger.error(`The file '${entryName}' does not match the expected CSV format.`);
+    logger.error(`Template:: The file '${entryName}' does not match the expected CSV format.`);
     return [];
   }
   const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
-  logger.info('template header extracted');
+  logger.info('Template:: template header extracted.');
   return templateHeader;
 };
 
@@ -804,24 +801,24 @@ const getCSVHeaderAndRow = (csvEntries: any) => {
     .split('\n')
     .map((row: string) => row.split(','))
     .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
-  logger.info('header and rows are extracted');
+  logger.info('Row/Header:: header and rows are extracted');
   return { header, rows };
 };
 
 const validHeader = async (entryName: string, header: any, templateHeader: any): Promise<boolean> => {
   if (header.length !== templateHeader.length) {
     await updateProcess(Process_id, { error_status: 'invalid_header_length', error_message: `CSV file contains more/less fields compared to the template.`, status: 'failed' });
-    logger.error(`CSV file contains more/less fields compared to the template.`);
+    logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return false;
   }
 
   const validHeader = templateHeader.every((col: any, i: number) => col === header[i]);
   if (!validHeader) {
     await updateProcess(Process_id, { error_status: 'invalid_column_name', error_message: `The file '${entryName}' does not match the expected CSV format.`, status: 'failed' });
-    logger.error(`The file '${entryName}' does not match the expected CSV format.`);
+    logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
     return false;
   }
-  logger.info(`${entryName} contain valid header`);
+  logger.info(`Header validate:: ${entryName} contain valid header`);
   return true;
 };
 
@@ -835,7 +832,7 @@ const fetchAndExtractZipEntries = async (folderName: string): Promise<AdmZip.IZi
     }
     const buffer = (await streamToBuffer(bulkUploadFolder)) as Buffer;
     const zip = new AdmZip(buffer);
-    logger.info('converted stream to zip entries');
+    logger.info('Cloud Process:: converted stream to zip entries');
     return zip.getEntries();
   } catch (error) {
     const code = _.get(error, 'code', 'UPLOAD_QUESTION_CRON');
