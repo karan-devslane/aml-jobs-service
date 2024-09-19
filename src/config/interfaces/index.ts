@@ -21,4 +21,6 @@ export interface IConfiguration {
   csvFileName: string[];
   presignedUrlExpiry: number;
   processInterval: number;
+  reCheckProcessInterval: number;
+  fileUploadInterval: number;
 }

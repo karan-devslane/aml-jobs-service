@@ -26,6 +26,8 @@ const appConfiguration: IConfiguration = {
   csvFileName: get(envVars, 'CSV_FILE_NAME', '').split(','),
   presignedUrlExpiry: get(envVars, 'PRESIGNED_URL_EXPIRY_TIME', 600) as number,
   processInterval: get(envVars, 'PROCESS_INTERVAL', 300000) as number,
+  reCheckProcessInterval: get(envVars, 'RE_CHECK_PROCESS_INTERVAL', 4) as number, //hours
+  fileUploadInterval: get(envVars, 'FILE_UPLOAD_INTERVAL', 4) as number, //hours
 };
 
 export default appConfiguration;
