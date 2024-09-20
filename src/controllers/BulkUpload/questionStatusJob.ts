@@ -15,6 +15,7 @@ import { QuestionSetStage } from '../../models/questionSetStage';
 import { ContentStage } from '../../models/contentStage';
 import { createQuestion } from '../../services/question';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../../services/service';
+import { createQuestionSet } from '../../services/questionSet';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval, grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields } = appConfiguration;
 let FILENAME: string;
@@ -174,19 +175,28 @@ const handleCSVEntries = async (csvFilesEntries: any, mediaEntires: any): Promis
         case 'question.csv': {
           logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionData = await validateQuestionCsvData(entry, mediaEntires);
-          if (!isValidQuestionData) continue;
+          if (!isValidQuestionData) {
+            logger.error(`Validation:: failed for ${entry.entryName}`);
+            return false;
+          }
           break;
         }
         case 'questionSet.csv': {
           logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionSetData = await validateQuestionSetCsvData(entry);
-          if (!isValidQuestionSetData) continue;
+          if (!isValidQuestionSetData) {
+            logger.error(`Validation:: failed for ${entry.entryName}`);
+            return false;
+          }
           break;
         }
         case 'content.csv': {
           logger.info(`Handle csv:: started Data validation for ${entry.entryName}`);
           const isValidQuestionContentData = await validateContentCsvData(entry, mediaEntires);
-          if (!isValidQuestionContentData) continue;
+          if (!isValidQuestionContentData) {
+            logger.error(`Validation:: failed for ${entry.entryName}`);
+            return false;
+          }
           break;
         }
         default: {
@@ -196,7 +206,7 @@ const handleCSVEntries = async (csvFilesEntries: any, mediaEntires: any): Promis
             status: 'failed',
           });
           logger.error(`Unsupported sheet in file '${entry.entryName}'.`);
-          continue;
+          return false;
         }
       }
     }
@@ -296,7 +306,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'completed' });
+    await updateProcess(Process_id, { status: 'open' });
     await QuestionStage.truncate({ restartIdentity: true });
     logger.info(`Question:: bulk upload completed successfully for Process ID: ${Process_id}`);
     return true;
@@ -372,9 +382,10 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'completed' });
+    await updateProcess(Process_id, { status: 'open' });
     await QuestionSetStage.truncate({ restartIdentity: true });
     logger.info(`Question set bulk upload completed successfully for Process ID: ${Process_id}`);
+    return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
     logger.error(errorMsg);
@@ -458,7 +469,7 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'completed' });
+    await updateProcess(Process_id, { status: 'open' });
     await ContentStage.truncate({ restartIdentity: true });
     logger.info(`Content:: bulk upload completed successfully for Process ID: ${Process_id}`);
     return true;
@@ -533,7 +544,7 @@ const validateQuestionStageData = async () => {
       dataValues: { id, question_id, question_set_id, question_type, L1_skill, body },
     } = question;
     const checkRecord = await questionStageMetaData({ question_id, question_set_id, L1_skill, question_type });
-    if (checkRecord.question.length > 1) {
+    if (checkRecord.questions.length > 1) {
       await updateQuestionStage(
         { id },
         {
@@ -578,7 +589,7 @@ const validateQuestionStageData = async () => {
         { id },
         {
           status: 'errored',
-          error_info: `Missing required data: ${requiredFields.join(', ')}`,
+          error_info: `Missing required data for type ${question_type},fields are  ${requiredFields.join(', ')}`,
         },
       );
       isValid = false;
@@ -592,17 +603,17 @@ const validateQuestionStageData = async () => {
 
 const validateQuestionSetStageData = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
-  let isValid;
-  if (_.isEmpty(getAllQuestionSetStage.questionSet)) {
+  let isValid = true;
+  if (_.isEmpty(getAllQuestionSetStage.questionSets)) {
     logger.info(`Validate Stage Data:: ${Process_id} ,the staging Data is empty invalid format or errored fields`);
     return false;
   }
-  for (const question of getAllQuestionSetStage.questionSet) {
+  for (const question of getAllQuestionSetStage.questionSets) {
     const {
       dataValues: { id, question_set_id, L1_skill },
     } = question;
     const checkRecord = await questionSetStageMetaData({ question_set_id, L1_skill });
-    if (checkRecord.questionSet.length > 1) {
+    if (checkRecord.questionSets.length > 1) {
       await updateQuestionStage(
         { id },
         {
@@ -621,9 +632,9 @@ const validateQuestionSetStageData = async () => {
 
 const validateContentStageData = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
-  let isValid;
+  let isValid = true;
   if (_.isEmpty(getAllContentStage.contents)) {
-    logger.info(`Validate Stage Data:: ${Process_id} ,the csv Data is invalid format or errored fields`);
+    logger.error(`Validate Stage Data:: ${Process_id} ,the csv Data is invalid format or errored fields`);
     return false;
   }
   for (const question of getAllContentStage.contents) {
@@ -640,8 +651,6 @@ const validateContentStageData = async () => {
         },
       );
       isValid = false;
-    } else {
-      isValid = true;
     }
   }
   logger.info(`Validate Stage Data:: ${Process_id} , the staging Data content is valid`);
@@ -650,7 +659,7 @@ const validateContentStageData = async () => {
 
 const insertStageDataToQuestionTable = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
-  const insertData = await formatStagingDataForMainInsert(getAllQuestionStage.questions);
+  const insertData = await formatQuestionStageData(getAllQuestionStage.questions);
   const contentInsert = await createQuestion(insertData);
   if (contentInsert) {
     logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
@@ -667,9 +676,10 @@ const insertStageDataToQuestionTable = async () => {
 
 const insertStageDataToQuestionSetTable = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
-  const insertData = await formatStagingDataForMainInsert(getAllQuestionSetStage.questionSets);
-  const contentInsert = await createContent(insertData);
-  if (contentInsert) {
+  const insertData = await formatQuestionSetStageData(getAllQuestionSetStage.questionSets);
+
+  const questionSetInsert = await createQuestionSet(insertData);
+  if (questionSetInsert) {
     logger.info({ message: `Insert main:: ${Process_id} question set bulk data inserted successfully to main table ` });
     return true;
   }
@@ -684,32 +694,19 @@ const insertStageDataToQuestionSetTable = async () => {
 
 const insertStageDataToContentTable = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
-  const insertData = await formatStagingDataForMainInsert(getAllContentStage.contents);
+  const insertData = await formateContentStageData(getAllContentStage.contents);
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
     logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
     return true;
   }
-  logger.error({ message: `${Process_id} content bulk data error in inserting to main table` });
+  logger.error({ message: `content insert:: ${Process_id} content bulk data error in inserting to main table` });
   await updateProcess(Process_id, {
     error_status: 'errored',
     error_message: ' content bulk data error in inserting', //check
     status: 'errored',
   });
   return false;
-};
-
-const preloadData = async () => {
-  const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
-  logger.info('Preloaded:: pre loading metadata from table.');
-  return {
-    boards,
-    classes,
-    skills,
-    tenants,
-    subSkills,
-    repositories,
-  };
 };
 
 const getCSVTemplateHeader = async (entryName: string) => {
@@ -794,7 +791,7 @@ const processRow = (rows: string[][], header: string[]) => {
 const ProcessStageDataQuestion = (questionsData: any) => {
   const fieldMapping: any = {
     'Grid-1_add': [...grid1AddFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
-    'Gid-1_sub': [...grid1SubFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
+    'Grid-1_sub': [...grid1SubFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
     'Grid-1_multiple': [...grid1MultipleFields, 'grid1_multiply_intermediate_steps_prefills', 'grid1_pre_fills_result'],
     'Grid-1_division': [...grid1DivFields, 'grid1_pre_fills_remainder', 'grid1_pre_fills_quotient', 'grid1_div_intermediate_steps_prefills'],
     'Grid-2': [...grid2Fields, 'grid2_pre_fills_n1', 'grid2_pre_fills_n2'],
@@ -837,110 +834,139 @@ const validMedia = async (processedCSVData: any, mediaEntries: any[], type: stri
   return mediaCsvData;
 };
 
-const formatStagingDataForMainInsert = async (stageData: any[]) => {
+const formatQuestionSetStageData = async (stageData: any[]) => {
   const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
-
+  subSkills;
   const transformedData = stageData.map((obj) => {
-    const {
-      grid_fib_n1,
-      grid_fib_n2,
-      mcq_option_1,
-      mcq_option_2,
-      mcq_option_3,
-      mcq_option_4,
-      mcq_option_5,
-      mcq_option_6,
-      mcq_correct_options,
-      sub_skill_carry,
-      sub_skill_procedural,
-      sub_skill_xx,
-      sub_skill_x0,
-    } = obj.body;
-    return {
+    const transferData = {
       identifier: uuid.v4(),
-      content_id: obj.content_id,
-      question_id: obj.question_id,
       question_set_id: obj.question_set_id,
-      question_type: obj.type,
-      operation: obj.L1_skill,
-      hint: obj.hint,
       sequence: obj.sequence,
-      name: { en: obj.title },
+      title: { en: obj.title || obj.question_text },
       description: { en: obj.description },
-      tenant: {
-        name: { en: 'AML' },
-        id: tenants.get('AML'),
-      },
-      repository: {
-        name: { en: obj.repository_name },
-        id: repositories.get(obj.repository_name),
-      },
+      tenant: tenants.tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      repository: repositories.repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
-        board: {
-          en: obj.board,
-          id: boards.get(obj.board) || null,
-        },
-        class: {
-          en: obj.class,
-          id: classes.get(obj.class) || null,
-        },
-        l1_skill: {
-          en: obj.L1_skill,
-          id: skills.get(obj.L1_skill) || null,
-        },
-        l2_skill: obj.L2_skill.map((skill: string) => ({
-          en: skill,
-          id: skills.get(skill) || null,
-        })),
-        l3_skill: obj.L3_skill.map((skill: string) => ({
-          en: skill,
-          id: skills.get(skill) || null,
-        })),
+        board: boards.boards.find((board: any) => board.name.en === obj.board),
+        class: classes.classes.find((Class: any) => Class.name.en === obj.class),
+        l1_skill: skills.skills.find((skill: any) => skill.name.en == obj.L1_skill),
+        l2_skill: obj.L2_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.L3_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
       },
-      sub_skills: obj.sub_skills.map((skill: string) => ({
-        en: skill,
-        id: subSkills.get(skill) || null,
-      })),
-      question_body: {
-        numbers: [grid_fib_n1, grid_fib_n2],
-        options: [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6],
-        correct_option: mcq_correct_options,
-        answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2),
-        wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
-      },
-      benchmark_time: obj.benchmark_time,
+      sub_skills: obj.sub_skills,
       purpose: obj.purpose,
       is_atomic: obj.is_atomic,
       gradient: obj.gradient,
       group_name: obj.group_name,
       status: 'draft',
-      media:
-        obj.media_files.length > 0
-          ? obj.media_files.map((media: any) => ({
-              src: media.src,
-              baseUrl: media.baseUrl,
-              mimeType: media.mimeType,
-              mediaType: media.mediaType,
-            }))
-          : [],
       created_by: 1,
       is_active: true,
     };
+    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
   });
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
 };
 
-const getAnswer = (skill: string, num1: number, num2: number) => {
+const formateContentStageData = async (stageData: any[]) => {
+  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
+  subSkills;
+  const transformedData = stageData.map((obj) => {
+    const transferData = {
+      identifier: uuid.v4(),
+      content_id: obj.content_id,
+      name: { en: obj.title || obj.question_text },
+      description: { en: obj.description },
+      tenant: tenants.tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      repository: repositories.repositories.find((repository: any) => repository.name.en === obj.repository_name),
+      taxonomy: {
+        board: boards.boards.find((board: any) => board.name.en === obj.board),
+        class: classes.classes.find((Class: any) => Class.name.en === obj.class),
+        l1_skill: skills.skills.find((skill: any) => skill.name.en == obj.L1_skill),
+        l2_skill: obj.L2_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.L3_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
+      },
+      sub_skills: obj.sub_skills,
+      gradient: obj.gradient,
+      status: 'draft',
+      media: obj.media_files,
+      created_by: 1,
+      is_active: true,
+    };
+    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
+  });
+  logger.info('Data transfer:: staging Data transferred as per original format');
+  return transformedData;
+};
+
+const formatQuestionStageData = async (stageData: any[]) => {
+  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
+  subSkills;
+  const transformedData = stageData.map((obj) => {
+    const {
+      grid_fib_n1 = null,
+      grid_fib_n2 = null,
+      mcq_option_1 = null,
+      mcq_option_2 = null,
+      mcq_option_3 = null,
+      mcq_option_4 = null,
+      mcq_option_5 = null,
+      mcq_option_6 = null,
+      mcq_correct_options = null,
+      sub_skill_carry = null,
+      sub_skill_procedural = null,
+      sub_skill_xx = null,
+      sub_skill_x0 = null,
+    } = obj.body || {};
+    const transferData = {
+      identifier: uuid.v4(),
+      question_id: obj.question_id,
+      question_set_id: obj.question_set_id,
+      question_type: obj.question_type,
+      operation: obj.L1_skill,
+      hints: obj.hint,
+      sequence: obj.sequence,
+      name: { en: obj.title || obj.question_text },
+      description: { en: obj.description },
+      tenant: tenants.tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      repository: repositories.repositories.find((repository: any) => repository.name.en === obj.repository_name),
+      taxonomy: {
+        board: boards.boards.find((board: any) => board.name.en === obj.board),
+        class: classes.classes.find((Class: any) => Class.name.en === obj.class),
+        l1_skill: skills.skills.find((skill: any) => skill.name.en == obj.L1_skill),
+        l2_skill: obj.L2_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.L3_skill.map((skill: string) => skills.skills.find((Skill: any) => Skill.name.en === skill)),
+      },
+      sub_skills: obj.sub_skills,
+      question_body: {
+        numbers: [grid_fib_n1, grid_fib_n2],
+        options: [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6],
+        correct_option: mcq_correct_options,
+        answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2, obj.question_type),
+        wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
+      },
+      benchmark_time: obj.benchmark_time,
+      status: 'draft',
+      media: obj.media_files,
+      created_by: 1,
+      is_active: true,
+    };
+    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
+  });
+  logger.info('Data transfer:: staging Data transferred as per original format');
+  return transformedData;
+};
+
+const getAnswer = (skill: string, num1: number, num2: number, type: string) => {
   switch (skill) {
-    case 'multiplication':
-      return multipleSolutionProcess(num1, num2);
+    case 'multiple_':
+      return multipleSolutionProcess(num1, num2, type);
     case 'division':
-      return divisionSolutionProcess(num1, num2);
-    case 'addition':
+      return divisionSolutionProcess(num1, num2, type);
+    case 'add':
       logger.info('Add:: got a value for addition  numbers');
       return num1 + num2;
-    case 'subtraction':
+    case 'sub':
       logger.info('sub:: got a value for subtraction  numbers');
       return num1 - num2;
     default:
@@ -952,6 +978,10 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
   const wrongAnswers = [];
 
   for (const [key, value] of Object.entries(inputData)) {
+    if (_.isEmpty(null)) {
+      logger.error('Wrong answer:: no wrong answer mapped');
+      break;
+    }
     const numbers = (value as number[]).map(Number).filter((n: any) => !isNaN(n) && n !== 0);
     if (numbers.length > 0) {
       wrongAnswers.push({
@@ -965,71 +995,103 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
   return wrongAnswers;
 };
 
-const multipleSolutionProcess = (num1: number, num2: number) => {
-  const num1Arr = num1.toString().split('').map(Number);
-  const num2Arr = num2.toString().split('').map(Number);
-  const resultArray = Array(num1Arr.length + num2Arr.length).fill(0);
+const multipleSolutionProcess = (num1: number, num2: number, type: string) => {
+  if (type === 'Grid-1') {
+    const num1Arr = num1.toString().split('').map(Number);
+    const num2Arr = num2.toString().split('').map(Number);
+    const resultArray = Array(num1Arr.length + num2Arr.length).fill(0);
 
-  const intermediateSteps = [];
-  for (let i = num1Arr.length - 1; i >= 0; i--) {
-    for (let j = num2Arr.length - 1; j >= 0; j--) {
-      const mulResult = num1Arr[i] * num2Arr[j];
-      const position = i + j + 1; // Position in the result array
+    const intermediateSteps: string[] = [];
 
-      const sum = resultArray[position] + mulResult;
-      resultArray[position] = sum % 10; // store the single digit
-      resultArray[position - 1] += Math.floor(sum / 10); // handle carry over
+    // Multiplication logic with step-by-step process
+    for (let i = num1Arr.length - 1; i >= 0; i--) {
+      for (let j = num2Arr.length - 1; j >= 0; j--) {
+        const mulResult = num1Arr[i] * num2Arr[j];
+        const position = i + j + 1;
+
+        const sum = resultArray[position] + mulResult;
+        resultArray[position] = sum % 10;
+        resultArray[position - 1] += Math.floor(sum / 10);
+      }
     }
+
+    // Remove leading zeros
+    while (resultArray[0] === 0) resultArray.shift();
+
+    const finalResult = resultArray.join('');
+
+    // Capture intermediate steps for grid-1 prefill (step-by-step partial products)
+    for (let i = 0; i < num2Arr.length; i++) {
+      const partialProduct = (num1 * num2Arr[i]).toString() + '0'.repeat(i);
+      intermediateSteps.push(partialProduct);
+    }
+
+    // Log and return the steps
+    logger.info('Multiplication: Intermediate steps and final result.');
+    return {
+      prefill: intermediateSteps, // steps in prefill format
+      finalResult, // final multiplication result
+    };
+  } else {
+    if (num1 && num2) {
+      return num1 / num2;
+    }
+    return null;
   }
-
-  // Remove leading zeros
-  while (resultArray[0] === 0) resultArray.shift();
-
-  const finalResult = resultArray.join('');
-
-  // Capture intermediate steps for prefill visualization
-  for (let i = 0; i < num2Arr.length; i++) {
-    const partialProduct = (num1 * num2Arr[i]).toString() + '0'.repeat(i);
-    intermediateSteps.push(partialProduct);
-  }
-  logger.info('Multiple:: got a value and steps for multiplication of numbers');
-  return {
-    prefill: intermediateSteps,
-    finalResult,
-  };
 };
 
-const divisionSolutionProcess = (dividend: number, divisor: number) => {
-  const dividendArr = dividend.toString().split('').map(Number);
-  let partialDividend = 0;
-  let quotient = '';
-  const intermediateSteps = [];
+const divisionSolutionProcess = (dividend: number, divisor: number, type: string) => {
+  if (type === 'Grid-2') {
+    const dividendArr = dividend.toString().split('').map(Number);
+    let partialDividend = 0;
+    let quotient = '';
+    const intermediateSteps: Array<{ partialDividend: string; partialQuotient: string; partialRemainder: string }> = [];
 
-  for (let i = 0; i < dividendArr.length; i++) {
-    partialDividend = partialDividend * 10 + dividendArr[i];
-    const currentQuotient = Math.floor(partialDividend / divisor);
-    const currentRemainder = partialDividend % divisor;
+    // Division logic with step-by-step process
+    for (let i = 0; i < dividendArr.length; i++) {
+      partialDividend = partialDividend * 10 + dividendArr[i];
+      const currentQuotient = Math.floor(partialDividend / divisor);
+      const currentRemainder = partialDividend % divisor;
 
-    // Update quotient and carry the remainder
-    quotient += currentQuotient.toString();
+      quotient += currentQuotient.toString();
 
-    intermediateSteps.push({
-      partialDividend: partialDividend.toString(),
-      partialQuotient: currentQuotient.toString(),
-      partialRemainder: currentRemainder.toString(),
-    });
+      // Capture step-by-step details for Grid-1 prefill
+      intermediateSteps.push({
+        partialDividend: partialDividend.toString(),
+        partialQuotient: currentQuotient.toString(),
+        partialRemainder: currentRemainder.toString(),
+      });
 
-    partialDividend = currentRemainder;
+      partialDividend = currentRemainder;
+    }
+
+    // Remove leading zeros from the quotient
+    quotient = quotient.replace(/^0+/, '');
+
+    // Log and return the steps
+    logger.info('Division: Intermediate steps and final result.');
+    return {
+      quotient, // final quotient
+      remainder: partialDividend, // final remainder
+      intermediate_steps: intermediateSteps, // steps in prefill format
+    };
+  } else {
+    if (dividend && divisor) {
+      return dividend / divisor;
+    }
+    return null;
   }
-
-  // Remove leading zeros in the quotient
-  quotient = quotient.replace(/^0+/, '');
-
-  logger.info('Division::  got a value and steps for division of numbers');
+};
+const preloadData = async () => {
+  const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
+  logger.info('Preloaded:: pre loading metadata from table.');
   return {
-    quotient,
-    remainder: partialDividend,
-    intermediate_steps: intermediateSteps,
+    boards,
+    classes,
+    skills,
+    tenants,
+    subSkills,
+    repositories,
   };
 };
 

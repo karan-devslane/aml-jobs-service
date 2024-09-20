@@ -2,7 +2,7 @@ import { QuestionSet } from '../models/questionSet';
 import { Optional } from 'sequelize';
 
 //create service for QuestionSet
-export const createQuestionSet = async (req: Optional<any, string>[]): Promise<any> => {
+export const createQuestionSet = async (req: Optional<any, any>[]): Promise<any> => {
   try {
     const stagingData = await QuestionSet.bulkCreate(req);
 

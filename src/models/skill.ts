@@ -20,7 +20,7 @@ export const SkillMaster = AppDataSource.define(
       comment: 'A short description of the skill',
     },
     type: {
-      type: DataTypes.ENUM('l1_skill', 'l2_skill', 'l3_skill'), // Enum field for type
+      type: DataTypes.ENUM('L1_skill', 'L2_skill', 'L3_skill'),
       allowNull: false,
       comment: 'The type/category of the skill',
     },
