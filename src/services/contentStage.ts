@@ -59,3 +59,9 @@ export const getAllContentStage = async (): Promise<any> => {
     return { error: true, message: errorMsg };
   }
 };
+
+export const getAllStageContent = async (): Promise<any> => {
+  const Contents = await ContentStage.findAll({});
+  const contents = Contents.map((c) => c.dataValues);
+  return contents;
+};

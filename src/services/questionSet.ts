@@ -15,16 +15,10 @@ export const createQuestionSet = async (req: Optional<any, any>[]): Promise<any>
   }
 };
 
-//get Single QuestionSet by meta data
-export const getAllQuestionSet = async (req: any): Promise<any> => {
-  try {
-    const questionSet = await QuestionSet.findAll({ where: req });
-    return { questionSet };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
-    return { error: true, message: errorMsg };
-  }
+export const getAllQuestionSet = async (): Promise<any> => {
+  const QuestionSets = await QuestionSet.findAll({});
+  const questionSets = QuestionSets.map((qs) => qs.dataValues);
+  return questionSets;
 };
 
 //get Single QuestionSet by id

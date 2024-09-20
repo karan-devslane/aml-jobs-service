@@ -48,3 +48,9 @@ export const questionSetStageById = async (id: number): Promise<any> => {
     return { error: true, message: errorMsg };
   }
 };
+
+export const getAllStageQuestionSet = async (): Promise<any> => {
+  const QuestionSets = await QuestionSetStage.findAll({});
+  const questionSets = QuestionSets.map((qs) => qs.dataValues);
+  return questionSets;
+};

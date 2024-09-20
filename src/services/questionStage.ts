@@ -48,3 +48,15 @@ export const questionStageById = async (id: number): Promise<any> => {
     return { error: true, message: errorMsg };
   }
 };
+
+export const getAllStageQuestion = async (): Promise<any> => {
+  try {
+    const Questions = await QuestionStage.findAll({});
+    const questions = Questions.map((q) => q.dataValues);
+    return questions;
+  } catch (error) {
+    const err = error instanceof Error;
+    const errorMsg = err ? error.message || 'failed to get a record' : '';
+    return { error: true, message: errorMsg };
+  }
+};

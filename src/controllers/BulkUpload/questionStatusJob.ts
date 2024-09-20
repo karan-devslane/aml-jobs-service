@@ -1,7 +1,7 @@
 import logger from '../../utils/logger';
 import * as _ from 'lodash';
 import * as uuid from 'uuid';
-import { getFolderMetaData, getFolderData, uploadFile } from '../../services/awsService';
+import { getFolderMetaData, getFolderData, uploadFile, uploadCsvFile } from '../../services/awsService';
 import { getProcessByMetaData, updateProcess } from '../../services/process';
 import path from 'path';
 import AdmZip from 'adm-zip';
@@ -9,13 +9,14 @@ import { appConfiguration } from '../../config';
 import { contentStageMetaData, createContentSage } from '../../services/contentStage';
 import { createQuestionStage, questionStageMetaData, updateQuestionStage } from '../../services/questionStage';
 import { createQuestionSetStage, questionSetStageMetaData } from '../../services/questionSetStage';
-import { createContent } from '../../services/content ';
+import { createContent, getAllContent } from '../../services/content ';
 import { QuestionStage } from '../../models/questionStage';
 import { QuestionSetStage } from '../../models/questionSetStage';
 import { ContentStage } from '../../models/contentStage';
-import { createQuestion } from '../../services/question';
+import { createQuestion, getAllQuestion } from '../../services/question';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../../services/service';
-import { createQuestionSet } from '../../services/questionSet';
+import { createQuestionSet, getAllQuestionSet } from '../../services/questionSet';
+import { stringify } from 'csv-stringify/.';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval, grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields } = appConfiguration;
 let FILENAME: string;
@@ -254,7 +255,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       logger.error('Question::  Stage 2 data processing failed or returned empty data');
       await updateProcess(Process_id, {
         error_status: 'process_stage_error',
-        error_message: 'Question :: Stage 2 data processing failed or returned empty data',
+        error_message: 'Question:: Stage 2 data processing failed or returned empty data',
         status: 'errored',
       });
       return false;
@@ -289,7 +290,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       logger.error(`Question:: ${Process_id} staging data are invalid`);
       await updateProcess(Process_id, {
         error_status: 'staging_validation_error',
-        error_message: `Question:: ${Process_id} staging data are invalid`,
+        error_message: `Question:: ${Process_id} staging data are invalid.correct the error and re upload t=new csv for fresh process`,
         status: 'errored',
       });
       return false;
@@ -306,9 +307,13 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'open' });
+    await updateProcess(Process_id, { status: 'completed' });
     await QuestionStage.truncate({ restartIdentity: true });
-    logger.info(`Question:: bulk upload completed successfully for Process ID: ${Process_id}`);
+    const getQuestions = await getAllQuestion();
+    await convertToCSV(getQuestions.questions, 'questions.csv');
+    await updateProcess(Process_id, { fileName: 'questions.csv' });
+
+    logger.info(`Question:: bulk upload completed successfully and questions.csv file upload to cloud for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -382,9 +387,12 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'open' });
+    await updateProcess(Process_id, { status: 'completed' });
     await QuestionSetStage.truncate({ restartIdentity: true });
-    logger.info(`Question set bulk upload completed successfully for Process ID: ${Process_id}`);
+    const questionSets = await getAllQuestionSet();
+    await convertToCSV(questionSets.questionSets, 'question_sets.csv');
+    await updateProcess(Process_id, { fileName: 'question_sets.csv' });
+    logger.info(`Question set bulk upload completed successfully and question_sets.csv file upload to cloud for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -469,9 +477,12 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       return false;
     }
 
-    await updateProcess(Process_id, { status: 'open' });
+    await updateProcess(Process_id, { status: 'completed' });
     await ContentStage.truncate({ restartIdentity: true });
-    logger.info(`Content:: bulk upload completed successfully for Process ID: ${Process_id}`);
+    const contents = await getAllContent();
+    await convertToCSV(contents.contents, 'contents.csv');
+    await updateProcess(Process_id, { fileName: 'contents.csv' });
+    logger.info(`Content:: bulk upload completed successfully and contents.csv file upload to cloud for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -1093,6 +1104,16 @@ const preloadData = async () => {
     subSkills,
     repositories,
   };
+};
+
+const convertToCSV = async (data: any, entryName: string) => {
+  const csvStream = stringify({
+    header: true,
+    columns: Object.keys(data[0]).map((key) => ({ key })),
+  });
+  await uploadCsvFile(csvStream, `${Process_id}/${entryName}`);
+
+  logger.info(`CSV:: csv file created for ${entryName.split('_')[0]}`);
 };
 
 const fetchAndExtractZipEntries = async (folderName: string): Promise<AdmZip.IZipEntry[]> => {

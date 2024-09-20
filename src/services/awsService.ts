@@ -28,6 +28,16 @@ export const uploadFile = async (filesData: any, type: string) => {
   return { fileName: fileName, src: `media/${type}` };
 };
 
+export const uploadCsvFile = async (filesData: any, fileName: string) => {
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: fileName,
+    Body: filesData,
+  });
+  await s3Client.send(command);
+  return fileName;
+};
+
 export const getQuestionSignedUrl = async (folderName: string, fileName: string) => {
   try {
     const command = new GetObjectCommand({

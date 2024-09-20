@@ -16,10 +16,11 @@ export const createQuestion = async (req: Optional<any, string>[]): Promise<any>
 };
 
 //get Single Question by meta data
-export const getAllQuestion = async (req: any): Promise<any> => {
+export const getAllQuestion = async (): Promise<any> => {
   try {
-    const question = await Question.findAll({ where: req });
-    return { question };
+    const Questions = await Question.findAll({});
+    const questions = Questions.map((q) => q.dataValues);
+    return questions;
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

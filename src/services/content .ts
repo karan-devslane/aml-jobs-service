@@ -16,9 +16,8 @@ export const getContentById = async (id: number): Promise<any> => {
 };
 
 // Get a single content by identifier
-export const getAllContent = async (req: any): Promise<any> => {
-  const contentDetails = await Content.findAll({
-    where: req,
-  });
-  return contentDetails;
+export const getAllContent = async (): Promise<any> => {
+  const Contents = await Content.findAll({});
+  const contents = Contents.map((c) => c.dataValues);
+  return contents;
 };
