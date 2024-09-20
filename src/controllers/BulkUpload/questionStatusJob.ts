@@ -296,6 +296,11 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
       return false;
     }
 
+    const getQuestions = await getAllQuestion();
+    await convertToCSV(getQuestions.questions, 'questions.csv');
+    await updateProcess(Process_id, { fileName: 'questions.csv', status: 'validated' });
+    logger.info('Question:: All the question are validated and uploaded in the cloud for referance');
+
     const insertToMainQuestionSet = await insertStageDataToQuestionTable();
     if (!insertToMainQuestionSet) {
       logger.error(`Question:: ${Process_id} staging data are invalid for main question insert`);
@@ -309,11 +314,7 @@ const validateQuestionCsvData = async (questionEntry: any, mediaEntries: any) =>
 
     await updateProcess(Process_id, { status: 'completed' });
     await QuestionStage.truncate({ restartIdentity: true });
-    const getQuestions = await getAllQuestion();
-    await convertToCSV(getQuestions.questions, 'questions.csv');
-    await updateProcess(Process_id, { fileName: 'questions.csv' });
-
-    logger.info(`Question:: bulk upload completed successfully and questions.csv file upload to cloud for Process ID: ${Process_id}`);
+    logger.info(`Question:: bulk upload completed successfully and ${questionEntry.entryName} for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
@@ -376,6 +377,11 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
       return false;
     }
 
+    const questionSets = await getAllQuestionSet();
+    await convertToCSV(questionSets.questionSets, 'question_sets.csv');
+    await updateProcess(Process_id, { fileName: 'question_sets.csv', status: 'validated' });
+    logger.info('Question set:: all the data are validated successfully and uploaded to cloud for reference');
+
     const insertToMainQuestionSet = await insertStageDataToQuestionSetTable();
     if (!insertToMainQuestionSet) {
       logger.error(`${Process_id} staging data are invalid for main question set insert`);
@@ -389,9 +395,6 @@ const validateQuestionSetCsvData = async (questionSetEntry: any) => {
 
     await updateProcess(Process_id, { status: 'completed' });
     await QuestionSetStage.truncate({ restartIdentity: true });
-    const questionSets = await getAllQuestionSet();
-    await convertToCSV(questionSets.questionSets, 'question_sets.csv');
-    await updateProcess(Process_id, { fileName: 'question_sets.csv' });
     logger.info(`Question set bulk upload completed successfully and question_sets.csv file upload to cloud for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
@@ -466,6 +469,11 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
       return false;
     }
 
+    const contents = await getAllContent();
+    await convertToCSV(contents.contents, 'contents.csv');
+    await updateProcess(Process_id, { fileName: 'contents.csv', status: 'validated' });
+    logger.info('content:: all the data are validated successfully and uploaded to cloud for reference');
+
     const insertToMainQuestionSet = await insertStageDataToContentTable();
     if (!insertToMainQuestionSet) {
       logger.error(`${Process_id} staging data are invalid for main question insert`);
@@ -479,9 +487,6 @@ const validateContentCsvData = async (contentEntry: any, mediaEntries: any) => {
 
     await updateProcess(Process_id, { status: 'completed' });
     await ContentStage.truncate({ restartIdentity: true });
-    const contents = await getAllContent();
-    await convertToCSV(contents.contents, 'contents.csv');
-    await updateProcess(Process_id, { fileName: 'contents.csv' });
     logger.info(`Content:: bulk upload completed successfully and contents.csv file upload to cloud for Process ID: ${Process_id}`);
     return true;
   } catch (error) {
@@ -671,15 +676,23 @@ const validateContentStageData = async () => {
 const insertStageDataToQuestionTable = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
   const insertData = await formatQuestionStageData(getAllQuestionStage.questions);
-  const contentInsert = await createQuestion(insertData);
-  if (contentInsert) {
-    logger.info({ message: `Insert main:: ${Process_id} content bulk data inserted successfully to main table ` });
+  if (!insertData) {
+    await updateProcess(Process_id, {
+      error_status: 'process_stage_data',
+      error_message: 'Question:: Error in formatting staging data to min table.',
+      status: 'errored',
+    });
+    return false;
+  }
+  const questionInsert = await createQuestion(insertData);
+  if (questionInsert) {
+    logger.info({ message: `Insert main:: ${Process_id} question bulk data inserted successfully to main table ` });
     return true;
   }
-  logger.error({ message: `Insert main:: ${Process_id} content bulk data error in inserting to main table` });
+  logger.error({ message: `Insert main:: ${Process_id} question bulk data error in inserting to main table` });
   await updateProcess(Process_id, {
     error_status: 'errored',
-    error_message: ' content bulk data error in inserting', //check
+    error_message: 'Question:: question bulk data error in inserting',
     status: 'errored',
   });
   return false;
