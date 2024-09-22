@@ -165,8 +165,8 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
     }
 
     logger.info(`File Format:: ${Process_id} csv files are valid file name and format`);
-    const handledCsv = await handleCSVEntries(csvZipEntries);
-    logger.info(`kittu ${handledCsv}`);
+    await handleCSVEntries(csvZipEntries);
+    return true;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
     logger.error(errorMsg);
@@ -856,7 +856,7 @@ const insertStageDataToQuestionSetTable = async () => {
 
 const insertStageDataToContentTable = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
-  const insertData = await formateContentStageData(getAllContentStage);
+  const insertData = await formatContentStageData(getAllContentStage);
   const contentInsert = await createContent(insertData);
   if (contentInsert) {
     logger.info(`Insert Content main:: ${Process_id} content bulk data inserted successfully to main table `);
@@ -1011,7 +1011,7 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
   return transformedData;
 };
 
-const formateContentStageData = async (stageData: any[]) => {
+const formatContentStageData = async (stageData: any[]) => {
   const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
 
   subSkills;
@@ -1046,6 +1046,7 @@ const formateContentStageData = async (stageData: any[]) => {
 
 const formatQuestionStageData = async (stageData: any[]) => {
   const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
+  subSkills;
   const transformedData = stageData.map((obj) => {
     const {
       grid_fib_n1 = null,
@@ -1085,8 +1086,8 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sub_skills: obj.sub_skills,
       question_body: {
         numbers: [grid_fib_n1, grid_fib_n2],
-        options: [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6],
-        correct_option: mcq_correct_options,
+        options: obj.type === 'mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+        correct_option: obj.type === 'mcq' ? mcq_correct_options : undefined,
         answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2, obj.question_type),
         wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
       },
@@ -1102,18 +1103,18 @@ const formatQuestionStageData = async (stageData: any[]) => {
   return transformedData;
 };
 
-const getAnswer = (skill: string, num1: number, num2: number, type: string) => {
+const getAnswer = (skill: string, num1: string, num2: string, type: string) => {
   switch (skill) {
-    case 'multiple_':
-      return multipleSolutionProcess(num1, num2, type);
+    case 'multiple':
+      return multiplyWithSteps(num1, num2, type);
     case 'division':
-      return divisionSolutionProcess(num1, num2, type);
+      return divideWithSteps(Number(num2), Number(num1), type);
     case 'add':
       logger.info('Add:: got a value for addition  numbers');
-      return num1 + num2;
+      return Number(num1) + Number(num2);
     case 'sub':
       logger.info('sub:: got a value for subtraction  numbers');
-      return num1 - num2;
+      return Number(num1) - Number(num2);
     default:
       return undefined;
   }
@@ -1123,9 +1124,8 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
   const wrongAnswers = [];
 
   for (const [key, value] of Object.entries(inputData)) {
-    if (_.isEmpty(null)) {
-      logger.error('Wrong answer:: no wrong answer mapped');
-      break;
+    if (_.isEmpty(value)) {
+      continue;
     }
     const numbers = (value as number[]).map(Number).filter((n: any) => !isNaN(n) && n !== 0);
     if (numbers.length > 0) {
@@ -1140,93 +1140,52 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
   return wrongAnswers;
 };
 
-const multipleSolutionProcess = (num1: number, num2: number, type: string) => {
+const multiplyWithSteps = (num1: string, num2: string, type: string) => {
+  const n1 = Number(num1);
+  const n2 = Number(num2);
   if (type === 'Grid-1') {
-    const num1Arr = num1.toString().split('').map(Number);
-    const num2Arr = num2.toString().split('').map(Number);
-    const resultArray = Array(num1Arr.length + num2Arr.length).fill(0);
-
-    const intermediateSteps: string[] = [];
-
-    // Multiplication logic with step-by-step process
-    for (let i = num1Arr.length - 1; i >= 0; i--) {
-      for (let j = num2Arr.length - 1; j >= 0; j--) {
-        const mulResult = num1Arr[i] * num2Arr[j];
-        const position = i + j + 1;
-
-        const sum = resultArray[position] + mulResult;
-        resultArray[position] = sum % 10;
-        resultArray[position - 1] += Math.floor(sum / 10);
-      }
+    const num2Str = num2.toString();
+    const num2Length = num2Str.length;
+    let intermediateStep = '';
+    let runningTotal = 0;
+    for (let i = 0; i < num2Length; i++) {
+      const placeValue = parseInt(num2Str[num2Length - 1 - i]) * Math.pow(10, i);
+      const product = n1 * placeValue;
+      intermediateStep += product;
+      runningTotal += product;
     }
-
-    // Remove leading zeros
-    while (resultArray[0] === 0) resultArray.shift();
-
-    const finalResult = resultArray.join('');
-
-    // Capture intermediate steps for grid-1 prefill (step-by-step partial products)
-    for (let i = 0; i < num2Arr.length; i++) {
-      const partialProduct = (num1 * num2Arr[i]).toString() + '0'.repeat(i);
-      intermediateSteps.push(partialProduct);
-    }
-
-    // Log and return the steps
-    logger.info('Multiplication: Intermediate steps and final result.');
     return {
-      prefill: intermediateSteps, // steps in prefill format
-      finalResult, // final multiplication result
+      intermediateStep: intermediateStep,
+      result: runningTotal,
     };
-  } else {
-    if (num1 && num2) {
-      return num1 / num2;
-    }
-    return null;
   }
+
+  return { answer: n1 * n2 };
 };
 
-const divisionSolutionProcess = (dividend: number, divisor: number, type: string) => {
-  if (type === 'Grid-2') {
-    const dividendArr = dividend.toString().split('').map(Number);
-    let partialDividend = 0;
-    let quotient = '';
-    const intermediateSteps: Array<{ partialDividend: string; partialQuotient: string; partialRemainder: string }> = [];
-
-    // Division logic with step-by-step process
-    for (let i = 0; i < dividendArr.length; i++) {
-      partialDividend = partialDividend * 10 + dividendArr[i];
-      const currentQuotient = Math.floor(partialDividend / divisor);
-      const currentRemainder = partialDividend % divisor;
-
-      quotient += currentQuotient.toString();
-
-      // Capture step-by-step details for Grid-1 prefill
-      intermediateSteps.push({
-        partialDividend: partialDividend.toString(),
-        partialQuotient: currentQuotient.toString(),
-        partialRemainder: currentRemainder.toString(),
-      });
-
-      partialDividend = currentRemainder;
+const divideWithSteps = (dividend: number, divisor: number, type: string) => {
+  if (type == 'Grid-1') {
+    if (divisor === 0) {
+      throw new Error('Division by zero is not allowed.');
     }
 
-    // Remove leading zeros from the quotient
-    quotient = quotient.replace(/^0+/, '');
-
-    // Log and return the steps
-    logger.info('Division: Intermediate steps and final result.');
+    const steps = [];
+    const quotient = Math.floor(dividend / divisor);
+    let remainder = dividend;
+    while (remainder >= divisor) {
+      const currentStep = Math.floor(remainder / divisor) * divisor;
+      steps.push(currentStep);
+      remainder -= currentStep;
+    }
     return {
-      quotient, // final quotient
-      remainder: partialDividend, // final remainder
-      intermediate_steps: intermediateSteps, // steps in prefill format
+      steps: steps,
+      quotient: quotient,
+      remainder: remainder,
     };
-  } else {
-    if (dividend && divisor) {
-      return dividend / divisor;
-    }
-    return null;
   }
+  return { answer: dividend / divisor };
 };
+
 const preloadData = async () => {
   const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
   logger.info('Preloaded:: pre loading metadata from table.');

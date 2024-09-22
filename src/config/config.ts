@@ -31,7 +31,7 @@ const appConfiguration: IConfiguration = {
   grid1AddFields: get(envVars, 'Grid-1_add_fields', '').split(','),
   grid1SubFields: get(envVars, 'Grid-1_sub_fields', '').split(','),
   grid1MultipleFields: get(envVars, 'Grid-1_multiple_fields', '').split(','),
-  grid1DivFields: get(envVars, 'Grid-1_div_fields', '').split(','),
+  grid1DivFields: get(envVars, 'Grid-1_division_fields', '').split(','),
   grid2Fields: get(envVars, 'Grid-2_fields', '').split(','),
   fibFields: get(envVars, 'fib_fields', '').split(','),
   mcqFields: get(envVars, 'mcq_fields', '').split(','),
