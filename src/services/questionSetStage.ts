@@ -15,8 +15,9 @@ export const createQuestionSetStage = async (req: Optional<any, any>[]): Promise
 //get Single QuestionSet by meta data
 export const questionSetStageMetaData = async (req: any): Promise<any> => {
   try {
-    const questionSets = await QuestionSetStage.findAll({ where: req });
-    return { questionSets };
+    const QuestionSets = await QuestionSetStage.findAll({ where: req });
+    const questionSets = QuestionSets.map((qs) => qs.dataValues);
+    return questionSets;
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

@@ -15,8 +15,9 @@ export const createQuestionStage = async (req: Optional<any, any>[]): Promise<an
 //get Single Question by meta data
 export const questionStageMetaData = async (req: any): Promise<any> => {
   try {
-    const questions = await QuestionStage.findAll({ where: req });
-    return { questions };
+    const Questions = await QuestionStage.findAll({ where: req });
+    const questions = Questions.map((q) => q.dataValues);
+    return questions;
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';

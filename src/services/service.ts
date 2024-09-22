@@ -16,7 +16,7 @@ export const getTenants = async (): Promise<any> => {
     name: JSON.parse(tenant.dataValues.name),
   }));
 
-  return { tenants };
+  return tenants;
 };
 
 export const getBoards = async (): Promise<any> => {
@@ -30,7 +30,7 @@ export const getBoards = async (): Promise<any> => {
     name: board.dataValues.name,
   }));
 
-  return { boards };
+  return boards;
 };
 
 export const getClasses = async (): Promise<any> => {
@@ -44,7 +44,7 @@ export const getClasses = async (): Promise<any> => {
     name: c.dataValues.name,
   }));
 
-  return { classes };
+  return classes;
 };
 
 export const getSkills = async (): Promise<any> => {
@@ -56,9 +56,10 @@ export const getSkills = async (): Promise<any> => {
   const skills = Skills.map((skill) => ({
     id: skill.dataValues.id,
     name: skill.dataValues.name,
+    type: skill.dataValues.type,
   }));
 
-  return { skills };
+  return skills;
 };
 
 export const getSubSkills = async (): Promise<any> => {
@@ -72,7 +73,7 @@ export const getSubSkills = async (): Promise<any> => {
     name: subSkill.dataValues.name,
   }));
 
-  return { subSkills };
+  return subSkills;
 };
 
 export const getRepository = async (): Promise<any> => {
@@ -86,5 +87,5 @@ export const getRepository = async (): Promise<any> => {
     name: repo.dataValues.name,
   }));
 
-  return { repositories };
+  return repositories;
 };

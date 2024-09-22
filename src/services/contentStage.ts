@@ -15,8 +15,9 @@ export const createContentSage = async (req: Optional<any, any>[]): Promise<any>
 //get Single Content by meta data
 export const contentStageMetaData = async (req: any): Promise<any> => {
   try {
-    const contents = await ContentStage.findAll({ where: req });
-    return { contents };
+    const Contents = await ContentStage.findAll({ where: req });
+    const contents = Contents.map((c) => c.dataValues);
+    return contents;
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get a record' : '';
@@ -28,7 +29,6 @@ export const contentStageMetaData = async (req: any): Promise<any> => {
 export const updateContentStage = async (whereClause: any, req: any): Promise<any> => {
   try {
     const updateContent = await ContentStage.update(req, { where: whereClause });
-
     return { error: false, updateContent };
   } catch (error) {
     const err = error instanceof Error;
