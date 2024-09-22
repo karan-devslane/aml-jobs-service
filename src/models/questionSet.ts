@@ -57,6 +57,14 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    content_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    instruction_text: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     status: {
       type: DataTypes.ENUM('draft', 'live'),
       allowNull: false,

@@ -941,6 +941,10 @@ const processRow = (rows: string[][], header: string[]) => {
           acc['sub_skill_x0'] = cellValue;
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
+        } else if (headerName.includes('instruction_media')) {
+          acc['is_atomic'] = cellValue;
+        } else if (headerName.includes('instruction_text')) {
+          acc['is_atomic'] = cellValue;
         } else {
           acc[headerName] = cellValue;
         }
@@ -983,12 +987,13 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
     const transferData = {
       identifier: uuid.v4(),
       question_set_id: obj.question_set_id,
+      content_id: obj.content_id ?? '',
+      instruction_text: obj.instruction_text ?? '',
       sequence: obj.sequence,
       title: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
@@ -1022,8 +1027,7 @@ const formatContentStageData = async (stageData: any[]) => {
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
@@ -1074,8 +1078,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
