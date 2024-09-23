@@ -1,10 +1,9 @@
 import { ContentStage } from '../models/contentStage';
-import { Optional } from 'sequelize';
 import logger from '../utils/logger';
 
-export const createContentStage = async (req: Optional<any, any>[]): Promise<any> => {
+export const createContentStage = async (insertData: Record<string, unknown>[]): Promise<any> => {
   try {
-    const stagingData = await ContentStage.bulkCreate(req);
+    const stagingData = await ContentStage.bulkCreate(insertData);
     const [dataValues] = stagingData;
     return { dataValues };
   } catch (error) {
@@ -12,9 +11,9 @@ export const createContentStage = async (req: Optional<any, any>[]): Promise<any
   }
 };
 
-export const contentStageMetaData = async (req: any): Promise<any> => {
+export const contentStageMetaData = async (whereClause: any): Promise<any> => {
   try {
-    const Contents = await ContentStage.findAll({ where: req });
+    const Contents = await ContentStage.findAll({ where: whereClause });
     const contents = Contents.map((c) => c.dataValues);
     return contents;
   } catch (error) {
@@ -24,9 +23,9 @@ export const contentStageMetaData = async (req: any): Promise<any> => {
   }
 };
 
-export const updateContentStage = async (whereClause: any, req: any): Promise<any> => {
+export const updateContentStage = async (whereClause: any, updateObj: any): Promise<any> => {
   try {
-    const updateContent = await ContentStage.update(req, { where: whereClause });
+    const updateContent = await ContentStage.update(updateObj, { where: whereClause });
     return { error: false, updateContent };
   } catch (error) {
     const err = error instanceof Error;

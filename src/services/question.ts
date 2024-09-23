@@ -1,10 +1,9 @@
 import { Question } from '../models/question';
-import { Optional } from 'sequelize';
 
 //create service for Question
-export const createQuestion = async (req: Optional<any, string>[]): Promise<any> => {
+export const createQuestion = async (insertData: Record<string, unknown>[]): Promise<any> => {
   try {
-    const stagingData = await Question.bulkCreate(req);
+    const stagingData = await Question.bulkCreate(insertData);
 
     const [dataValues] = stagingData;
     return { error: false, message: 'success', dataValues };

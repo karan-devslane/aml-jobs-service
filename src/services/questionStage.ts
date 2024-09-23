@@ -1,10 +1,9 @@
 import { QuestionStage } from '../models/questionStage';
-import { Optional } from 'sequelize';
 import logger from '../utils/logger';
 
-export const createQuestionStage = async (req: Optional<any, any>[]): Promise<any> => {
+export const createQuestionStage = async (insertData: Record<string, unknown>[]): Promise<any> => {
   try {
-    const stagingData = await QuestionStage.bulkCreate(req);
+    const stagingData = await QuestionStage.bulkCreate(insertData);
     const [dataValues] = stagingData;
     return { dataValues };
   } catch (error) {
@@ -12,9 +11,9 @@ export const createQuestionStage = async (req: Optional<any, any>[]): Promise<an
   }
 };
 
-export const questionStageMetaData = async (req: any): Promise<any> => {
+export const questionStageMetaData = async (whereClause: any): Promise<any> => {
   try {
-    const Questions = await QuestionStage.findAll({ where: req });
+    const Questions = await QuestionStage.findAll({ where: whereClause });
     const questions = Questions.map((q) => q.dataValues);
     return questions;
   } catch (error) {
@@ -24,9 +23,9 @@ export const questionStageMetaData = async (req: any): Promise<any> => {
   }
 };
 
-export const updateQuestionStage = async (whereClause: any, req: any): Promise<any> => {
+export const updateQuestionStage = async (whereClause: any, updateObj: any): Promise<any> => {
   try {
-    const updateQuestionStage = await QuestionStage.update(req, { where: whereClause });
+    const updateQuestionStage = await QuestionStage.update(updateObj, { where: whereClause });
 
     return { error: false, updateQuestionStage };
   } catch (error) {
