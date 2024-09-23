@@ -1,11 +1,9 @@
 import { Process } from '../models/process';
-import { Optional } from 'sequelize';
 
 //create service for Process
-export const createProcess = async (req: Optional<any, string>): Promise<any> => {
+export const createProcess = async (insertData: Record<any, string>): Promise<any> => {
   try {
-    await Process.create(req);
-
+    await Process.create(insertData);
     return { error: false, message: 'success' };
   } catch (error) {
     const err = error instanceof Error;
@@ -26,7 +24,6 @@ export const getProcessByMetaData = async (req: any): Promise<any> => {
     return { error: true, message: errorMsg };
   }
 };
-
 //update single Process
 export const updateProcess = async (process_id: string, req: any): Promise<any> => {
   try {

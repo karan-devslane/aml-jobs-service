@@ -1,6 +1,6 @@
 import { appConfiguration, AppDataSource } from './config';
 import logger from './utils/logger';
-import { scheduleJob } from './controllers/BulkUpload/questionStatusJob';
+import { bulkUploadProcess } from './controllers/bulkUpload';
 let isJobRunning = false;
 
 const { processInterval } = appConfiguration;
@@ -25,7 +25,7 @@ const processJob = async (): Promise<void> => {
   logger.info('Starting the job...');
 
   try {
-    await scheduleJob();
+    await bulkUploadProcess();
     logger.info('Job completed.');
   } catch (error: any) {
     logger.error('Error during job execution', { message: error.message });

@@ -1,21 +1,21 @@
-import logger from '../../utils/logger';
+import logger from '../utils/logger';
 import * as _ from 'lodash';
 import * as uuid from 'uuid';
-import { getFolderMetaData, getFolderData, uploadMediaFile, uploadCsvFile } from '../../services/awsService';
-import { getProcessByMetaData, updateProcess } from '../../services/process';
+import { getAWSFolderMetaData, getFolderData, uploadMediaFile, uploadCsvFile } from '../services/awsService';
+import { getProcessByMetaData, updateProcess } from '../services/process';
 import path from 'path';
 import AdmZip from 'adm-zip';
-import { appConfiguration } from '../../config';
-import { contentStageMetaData, createContentSage, getAllStageContent, updateContentStage } from '../../services/contentStage';
-import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../../services/questionStage';
-import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData } from '../../services/questionSetStage';
-import { createContent } from '../../services/content ';
-import { QuestionStage } from '../../models/questionStage';
-import { QuestionSetStage } from '../../models/questionSetStage';
-import { ContentStage } from '../../models/contentStage';
-import { createQuestion } from '../../services/question';
-import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../../services/service';
-import { createQuestionSet } from '../../services/questionSet';
+import { appConfiguration } from '../config';
+import { contentStageMetaData, createContentSage, getAllStageContent, updateContentStage } from '../services/contentStage';
+import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
+import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData } from '../services/questionSetStage';
+import { createContent } from '../services/content ';
+import { QuestionStage } from '../models/questionStage';
+import { QuestionSetStage } from '../models/questionSetStage';
+import { ContentStage } from '../models/contentStage';
+import { createQuestion } from '../services/question';
+import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
+import { createQuestionSet } from '../services/questionSet';
 import { Parser } from '@json2csv/plainjs';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval, grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields } = appConfiguration;
@@ -23,7 +23,7 @@ let FILENAME: string;
 let Process_id: string;
 let mediaEntries: any[];
 
-export const scheduleJob = async () => {
+export const bulkUploadProcess = async () => {
   await handleFailedProcess();
   const processesInfo = await getProcessByMetaData({ status: 'open' });
   const { getAllProcess } = processesInfo;
@@ -38,7 +38,7 @@ export const scheduleJob = async () => {
         continue;
       }
       FILENAME = fileName;
-      const bulkUploadMetadata = await getFolderMetaData(`upload/${process_id}`);
+      const bulkUploadMetadata = await getAWSFolderMetaData(`upload/${process_id}`);
       logger.info(`initiate:: bulk upload folder validation for process id :${process_id}.`);
       await validateZipFile(bulkUploadMetadata);
     }
@@ -172,6 +172,7 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
       error_message: errorMsg,
       status: 'errored',
     });
+    return false;
   }
 };
 

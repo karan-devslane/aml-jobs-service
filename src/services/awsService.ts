@@ -38,7 +38,7 @@ export const uploadCsvFile = async (filesData: any, fileName: string) => {
   return fileUpload;
 };
 
-export const getFolderMetaData = async (folderPath: string) => {
+export const getAWSFolderMetaData = async (folderPath: string) => {
   try {
     const command = new ListObjectsV2Command({
       Bucket: bucketName,
