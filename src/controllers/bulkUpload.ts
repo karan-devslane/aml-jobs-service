@@ -1020,7 +1020,7 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
       created_by: 1,
       is_active: true,
     };
-    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
+    return transferData;
   });
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
@@ -1052,7 +1052,7 @@ const formatContentStageData = async (stageData: any[]) => {
       created_by: 1,
       is_active: true,
     };
-    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
+    return transferData;
   });
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
@@ -1110,7 +1110,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
       created_by: 1,
       is_active: true,
     };
-    return Object.fromEntries(Object.entries(transferData).filter(([_, v]) => v !== undefined));
+    return transferData;
   });
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
