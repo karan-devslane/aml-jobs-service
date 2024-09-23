@@ -1,13 +1,16 @@
 import { QuestionStage } from '../models/questionStage';
 import logger from '../utils/logger';
 
-export const createQuestionStage = async (insertData: Record<string, unknown>[]): Promise<any> => {
+export const createQuestionStage = async (insertData: Array<Record<string, any>>): Promise<any> => {
   try {
     const stagingData = await QuestionStage.bulkCreate(insertData);
     const [dataValues] = stagingData;
     return { dataValues };
   } catch (error) {
     logger.error(error);
+    const err = error instanceof Error;
+    const errorMsg = err ? error.message || 'failed to create record' : '';
+    return { error: true, message: errorMsg };
   }
 };
 
@@ -17,8 +20,9 @@ export const questionStageMetaData = async (whereClause: any): Promise<any> => {
     const questions = Questions.map((q) => q.dataValues);
     return questions;
   } catch (error) {
+    logger.error(error);
     const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
+    const errorMsg = err ? error.message || 'failed to get all record' : '';
     return { error: true, message: errorMsg };
   }
 };
@@ -26,9 +30,9 @@ export const questionStageMetaData = async (whereClause: any): Promise<any> => {
 export const updateQuestionStage = async (whereClause: any, updateObj: any): Promise<any> => {
   try {
     const updateQuestionStage = await QuestionStage.update(updateObj, { where: whereClause });
-
     return { error: false, updateQuestionStage };
   } catch (error) {
+    logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
     return { error: true, message: errorMsg };
@@ -41,8 +45,9 @@ export const getAllStageQuestion = async (): Promise<any> => {
     const questions = Questions.map((q) => q.dataValues);
     return questions;
   } catch (error) {
+    logger.error(error);
     const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
+    const errorMsg = err ? error.message || 'failed to get all record' : '';
     return { error: true, message: errorMsg };
   }
 };
