@@ -993,8 +993,13 @@ const processQuestionStage = (questionsData: any) => {
 };
 
 const formatQuestionSetStageData = async (stageData: any[]) => {
-  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
-  subSkills;
+  const preload = await preloadData();
+  const boards = preload?.boards || [];
+  const classes = preload?.classes || [];
+  const skills = preload?.skills || [];
+  const tenants = preload?.tenants || [];
+  const subSkills = preload?.subSkills || [];
+  const repositories = preload?.repositories || [];
   const transformedData = stageData.map((obj) => {
     const transferData = {
       identifier: uuid.v4(),
@@ -1029,9 +1034,13 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
 };
 
 const formatContentStageData = async (stageData: any[]) => {
-  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
-
-  subSkills;
+  const preload = await preloadData();
+  const boards = preload?.boards || [];
+  const classes = preload?.classes || [];
+  const skills = preload?.skills || [];
+  const tenants = preload?.tenants || [];
+  const subSkills = preload?.subSkills || [];
+  const repositories = preload?.repositories || [];
   const transformedData = stageData.map((obj) => {
     const transferData = {
       identifier: uuid.v4(),
@@ -1061,8 +1070,13 @@ const formatContentStageData = async (stageData: any[]) => {
 };
 
 const formatQuestionStageData = async (stageData: any[]) => {
-  const { boards, classes, skills, tenants, subSkills, repositories } = await preloadData();
-  subSkills;
+  const preload = await preloadData();
+  const boards = preload?.boards || [];
+  const classes = preload?.classes || [];
+  const skills = preload?.skills || [];
+  const tenants = preload?.tenants || [];
+  const subSkills = preload?.subSkills || [];
+  const repositories = preload?.repositories || [];
   const transformedData = stageData.map((obj) => {
     const {
       grid_fib_n1 = null,
@@ -1202,16 +1216,22 @@ const divideWithSteps = (dividend: number, divisor: number, type: string) => {
 };
 
 const preloadData = async () => {
-  const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
-  logger.info('Preloaded:: pre loading metadata from table.');
-  return {
-    boards,
-    classes,
-    skills,
-    tenants,
-    subSkills,
-    repositories,
-  };
+  try {
+    const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
+
+    logger.info('Preloaded:: preloading metadata from table.');
+
+    return {
+      boards,
+      classes,
+      skills,
+      tenants,
+      subSkills,
+      repositories,
+    };
+  } catch (error) {
+    logger.error('Error while preloading data: ', error);
+  }
 };
 
 const convertToCSV = async (jsonData: any, fileName: string) => {
