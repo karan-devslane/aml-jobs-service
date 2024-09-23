@@ -1,9 +1,8 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { appConfiguration } from '../config';
 import logger from '../utils/logger';
 
-const { bucketName, presignedUrlExpiry } = appConfiguration;
+const { bucketName } = appConfiguration;
 
 const s3Client = new S3Client({});
 
@@ -37,25 +36,6 @@ export const uploadCsvFile = async (filesData: any, fileName: string) => {
   });
   const fileUpload = await s3Client.send(command);
   return fileUpload;
-};
-
-export const getQuestionSignedUrl = async (folderName: string, fileName: string) => {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: `${folderName}/${fileName}`,
-    });
-
-    const url = await getSignedUrl(s3Client, command, {
-      expiresIn: presignedUrlExpiry,
-    });
-
-    return { error: false, url, message: 'success' };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to generate URL for get' : '';
-    return { error: true, message: errorMsg };
-  }
 };
 
 export const getFolderMetaData = async (folderPath: string) => {
