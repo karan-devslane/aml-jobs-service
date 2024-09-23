@@ -12,7 +12,6 @@ export const createContentStage = async (req: Optional<any, any>[]): Promise<any
   }
 };
 
-//get Single Content by meta data
 export const contentStageMetaData = async (req: any): Promise<any> => {
   try {
     const Contents = await ContentStage.findAll({ where: req });
@@ -25,7 +24,6 @@ export const contentStageMetaData = async (req: any): Promise<any> => {
   }
 };
 
-//update single Content
 export const updateContentStage = async (whereClause: any, req: any): Promise<any> => {
   try {
     const updateContent = await ContentStage.update(req, { where: whereClause });
@@ -33,29 +31,6 @@ export const updateContentStage = async (whereClause: any, req: any): Promise<an
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
-    return { error: true, message: errorMsg };
-  }
-};
-
-//get Single Content by id
-export const contentStageById = async (id: number): Promise<any> => {
-  try {
-    const getContent = await ContentStage.findOne({ where: { id } });
-    return { error: false, getContent };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
-    return { error: true, message: errorMsg };
-  }
-};
-
-export const getAllContentStage = async (): Promise<any> => {
-  try {
-    const content = await ContentStage.findAll();
-    return { content };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
     return { error: true, message: errorMsg };
   }
 };

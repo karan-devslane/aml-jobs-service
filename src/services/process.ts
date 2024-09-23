@@ -1,22 +1,9 @@
 import { Process } from '../models/process';
 
-//create service for Process
-export const createProcess = async (insertData: Record<any, string>): Promise<any> => {
+export const getProcessMetaData = async (whereClause: any): Promise<any> => {
   try {
-    await Process.create(insertData);
-    return { error: false, message: 'success' };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to create a record' : '';
-    return { error: true, message: errorMsg };
-  }
-};
-
-//get Single Process by meta data
-export const getProcessByMetaData = async (req: any): Promise<any> => {
-  try {
-    req.is_active = true;
-    const getAllProcess = await Process.findAll({ where: req, raw: true });
+    whereClause.is_active = true;
+    const getAllProcess = await Process.findAll({ where: whereClause, raw: true });
     return { error: false, getAllProcess };
   } catch (error) {
     const err = error instanceof Error;
@@ -24,31 +11,17 @@ export const getProcessByMetaData = async (req: any): Promise<any> => {
     return { error: true, message: errorMsg };
   }
 };
-//update single Process
-export const updateProcess = async (process_id: string, req: any): Promise<any> => {
+
+export const updateProcess = async (process_id: string, updateObj: any): Promise<any> => {
   try {
     const whereClause: Record<string, any> = { process_id };
     whereClause.is_active = true;
-    const updateProcess = await Process.update(req, { where: whereClause });
+    const updateProcess = await Process.update(updateObj, { where: whereClause });
 
     return { error: false, updateProcess };
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
-    return { error: true, message: errorMsg };
-  }
-};
-
-//get Single Process by id
-export const getProcessById = async (process_id: string): Promise<any> => {
-  try {
-    const whereClause: Record<string, any> = { process_id };
-    whereClause.is_active = true;
-    const getProcess = await Process.findOne({ where: whereClause, raw: true });
-    return { error: false, getProcess };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
     return { error: true, message: errorMsg };
   }
 };

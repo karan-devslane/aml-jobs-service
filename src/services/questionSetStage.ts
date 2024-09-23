@@ -12,7 +12,6 @@ export const createQuestionSetStage = async (req: Optional<any, any>[]): Promise
   }
 };
 
-//get Single QuestionSet by meta data
 export const questionSetStageMetaData = async (req: any): Promise<any> => {
   try {
     const QuestionSets = await QuestionSetStage.findAll({ where: req });
@@ -25,7 +24,6 @@ export const questionSetStageMetaData = async (req: any): Promise<any> => {
   }
 };
 
-//update single QuestionSet
 export const updateQuestionStageSet = async (whereClause: any, req: any): Promise<any> => {
   try {
     const updateQuestionSet = await QuestionSetStage.update(req, { where: whereClause });
@@ -34,18 +32,6 @@ export const updateQuestionStageSet = async (whereClause: any, req: any): Promis
   } catch (error) {
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
-    return { error: true, message: errorMsg };
-  }
-};
-
-//get Single QuestionSet by id
-export const questionSetStageById = async (id: number): Promise<any> => {
-  try {
-    const getQuestionSet = await QuestionSetStage.findOne({ where: { id } });
-    return { error: false, getQuestionSet };
-  } catch (error) {
-    const err = error instanceof Error;
-    const errorMsg = err ? error.message || 'failed to get a record' : '';
     return { error: true, message: errorMsg };
   }
 };

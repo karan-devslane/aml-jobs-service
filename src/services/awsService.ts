@@ -6,7 +6,7 @@ const { bucketName } = appConfiguration;
 
 const s3Client = new S3Client({});
 
-export const getFolderData = async (filePath: string) => {
+export const getAWSFolderData = async (filePath: string) => {
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: filePath,
