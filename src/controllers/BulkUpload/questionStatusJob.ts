@@ -50,7 +50,6 @@ export const scheduleJob = async () => {
       error_message: `Failed to retrieve metadata for process id: ${Process_id}. ${errorMsg}.Re upload file for new process`,
     });
     logger.error(errorMsg);
-    throw new Error(`Failed to retrieve metadata for process id: ${Process_id}. ${errorMsg}`);
   }
 };
 
@@ -173,7 +172,6 @@ const validateCSVFilesFormatInZip = async (): Promise<boolean> => {
       error_message: errorMsg,
       status: 'errored',
     });
-    throw new Error(`Unexpected Error occurred,${errorMsg}`);
   }
 };
 
@@ -233,7 +231,6 @@ const handleCSVEntries = async (csvFilesEntries: any[]): Promise<any> => {
       error_message: errorMsg,
       status: 'errored',
     });
-    throw new Error(`Unexpected Error occurred,${errorMsg}`);
   }
 };
 
@@ -363,10 +360,10 @@ const validateQuestionsStage = async () => {
 
   await updateProcess(Process_id, { fileName: 'questions.csv', status: 'validated' });
   logger.info(`Upload Cloud::Staging Data ready for upload in cloud`);
-  await uploadQuestionsStageData();
+  await uploadQuestionStage();
 };
 
-const uploadQuestionsStageData = async () => {
+const uploadQuestionStage = async () => {
   const getQuestions = await getAllStageQuestion();
   const uploadQuestion = await convertToCSV(getQuestions, 'questions');
   if (!uploadQuestion) {
@@ -397,10 +394,10 @@ const questionMediaProcess = async () => {
       if (mediaFiles[0] !== null && mediaFiles.length > 0) {
         const updateContent = await updateQuestionStage({ id: question.id }, { media_files: mediaFiles });
         if (updateContent.error) {
-          logger.error('Question Media upload:: Media validation or update failed');
+          logger.error('Question Media upload:: Media validation failed');
           await updateProcess(Process_id, {
             error_status: 'media_validation_error',
-            error_message: ' Media validation or update failed',
+            error_message: ' Media validation  failed',
             status: 'errored',
           });
           return false;
@@ -496,10 +493,10 @@ const validateQuestionSetsStage = async () => {
 
   await updateProcess(Process_id, { status: 'validated' });
   logger.info(`Upload Cloud::Staging Data ready for upload in cloud`);
-  await uploadQuestionSetsStageData();
+  await uploadQuestionSetStage();
 };
 
-const uploadQuestionSetsStageData = async () => {
+const uploadQuestionSetStage = async () => {
   const questionSets = await getAllStageQuestionSet();
   await convertToCSV(questionSets, 'questionSets');
   await updateProcess(Process_id, { fileName: 'questionSet.csv', status: 'validated' });
@@ -592,7 +589,7 @@ const validateContentsStage = async () => {
 
   await updateProcess(Process_id, { fileName: 'contents.csv', status: 'validated' });
   logger.info(`Upload Cloud::Staging Data ready for upload in cloud`);
-  await uploadContentsStageData();
+  await uploadContentStage();
 };
 
 const contentsMediaProcess = async () => {
@@ -631,7 +628,7 @@ const contentsMediaProcess = async () => {
   return true;
 };
 
-const uploadContentsStageData = async () => {
+const uploadContentStage = async () => {
   const getContents = await getAllStageContent();
   await convertToCSV(getContents, 'contents');
   logger.info('Content csv upload:: all the data are validated successfully and uploaded to cloud for reference');
