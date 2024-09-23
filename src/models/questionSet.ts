@@ -59,11 +59,11 @@ export const QuestionSet = AppDataSource.define(
     },
     content_id: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     instruction_text: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('draft', 'live'),
