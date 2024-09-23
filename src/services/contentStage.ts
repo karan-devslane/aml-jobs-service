@@ -2,7 +2,7 @@ import { ContentStage } from '../models/contentStage';
 import { Optional } from 'sequelize';
 import logger from '../utils/logger';
 
-export const createContentSage = async (req: Optional<any, any>[]): Promise<any> => {
+export const createContentStage = async (req: Optional<any, any>[]): Promise<any> => {
   try {
     const stagingData = await ContentStage.bulkCreate(req);
     const [dataValues] = stagingData;

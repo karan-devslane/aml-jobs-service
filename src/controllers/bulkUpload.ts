@@ -6,7 +6,7 @@ import { getProcessByMetaData, updateProcess } from '../services/process';
 import path from 'path';
 import AdmZip from 'adm-zip';
 import { appConfiguration } from '../config';
-import { contentStageMetaData, createContentSage, getAllStageContent, updateContentStage } from '../services/contentStage';
+import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData } from '../services/questionSetStage';
 import { createContent } from '../services/content ';
@@ -687,7 +687,7 @@ const insertQuestionSetsStage = async (insertData: object[]) => {
 };
 
 const insertContentsStage = async (insertData: object[]) => {
-  const contentStage = await createContentSage(insertData);
+  const contentStage = await createContentStage(insertData);
   if (!contentStage) {
     logger.error(`Insert Content Staging:: ${Process_id} content bulk data error in inserting`);
     await updateProcess(Process_id, {
@@ -1003,8 +1003,7 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
       title: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
@@ -1038,8 +1037,7 @@ const formatContentStageData = async (stageData: any[]) => {
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
@@ -1090,8 +1088,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
-      // repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
-      repository: repositories,
+      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
