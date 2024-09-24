@@ -479,7 +479,7 @@ const questionMediaProcess = async () => {
 
 const insertQuestionMain = async () => {
   const insertToMainQuestionSet = await stageDataToQuestion();
-  if (insertToMainQuestionSet) {
+  if (!insertToMainQuestionSet) {
     logger.error(`Question Bulk Insert:: ${Process_id} staging data are invalid for main question insert`);
     await updateProcess(Process_id, {
       error_status: 'main_insert_error',
@@ -587,7 +587,7 @@ const uploadQuestionSetStage = async (isValid: boolean) => {
 
 const insertQuestionSetMain = async () => {
   const insertToMainQuestionSet = await stageDataToQuestionSet();
-  if (insertToMainQuestionSet) {
+  if (!insertToMainQuestionSet) {
     logger.error(`Question set bulk insert:: ${Process_id} staging data are invalid for main question set insert`);
     await updateProcess(Process_id, {
       error_status: 'main_insert_error',
@@ -760,7 +760,7 @@ const contentsMediaProcess = async () => {
 
 const insertContentMain = async () => {
   const insertToMainContent = await stageDataToContent();
-  if (insertToMainContent) {
+  if (!insertToMainContent) {
     logger.error(`Content Main Insert::${Process_id} staging data are invalid for main question insert`);
     await updateProcess(Process_id, {
       error_status: 'main_insert_error',
