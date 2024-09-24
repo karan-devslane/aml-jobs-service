@@ -1,12 +1,16 @@
+import { AppDataSource } from '../config';
 import { QuestionStage } from '../models/questionStage';
 import logger from '../utils/logger';
 
 export const createQuestionStage = async (insertData: Array<Record<string, any>>): Promise<any> => {
+  const transact = await AppDataSource.transaction();
   try {
-    const stagingData = await QuestionStage.bulkCreate(insertData);
+    const stagingData = await QuestionStage.bulkCreate(insertData, { transaction: transact });
+    await transact.commit();
     const [dataValues] = stagingData;
     return { dataValues };
   } catch (error) {
+    await transact.rollback();
     logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to create record' : '';
@@ -28,10 +32,13 @@ export const questionStageMetaData = async (whereClause: any): Promise<any> => {
 };
 
 export const updateQuestionStage = async (whereClause: any, updateObj: any): Promise<any> => {
+  const transact = await AppDataSource.transaction();
   try {
-    const updateQuestionStage = await QuestionStage.update(updateObj, { where: whereClause });
+    const updateQuestionStage = await QuestionStage.update(updateObj, { where: whereClause, transaction: transact });
+    await transact.commit();
     return { error: false, updateQuestionStage };
   } catch (error) {
+    await transact.rollback();
     logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
