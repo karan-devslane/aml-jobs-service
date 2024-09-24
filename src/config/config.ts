@@ -17,7 +17,7 @@ const appConfiguration: IConfiguration = {
   appVersion: get(envVars, 'AML_SERVICE_APP_VERSION', '1.0'),
   DB: {
     host: get(envVars, 'AML_SERVICE_DB_HOST', 'localhost'),
-    port: Number(get(envVars, 'AML_SERVICE_DB_PORT')),
+    port: get(envVars, 'AML_SERVICE_DB_PORT', 5432) as number,
     password: get(envVars, 'AML_SERVICE_DB_PASS', 'postgres'),
     name: get(envVars, 'AML_SERVICE_DB_NAME', 'postgres'),
     user: get(envVars, 'AML_SERVICE_DB_USER', 'postgres'),
