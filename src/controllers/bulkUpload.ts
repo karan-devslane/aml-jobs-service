@@ -22,6 +22,7 @@ const { csvFileName, fileUploadInterval, reCheckProcessInterval, grid1AddFields,
 let FILENAME: string;
 let Process_id: string;
 let mediaEntries: any[];
+const tenantName = 'Ekstep';
 
 export const bulkUploadProcess = async () => {
   await handleFailedProcess();
@@ -1174,7 +1175,7 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
       sequence: obj.sequence,
       title: { en: obj.title || obj.question_text },
       description: { en: obj.description },
-      tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      tenant: tenants.find((tenant: any) => tenant.name === tenantName),
       repository: repositories.find((repository: any) => repository.name === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
@@ -1212,7 +1213,7 @@ const formatContentStageData = async (stageData: any[]) => {
       content_id: obj.content_id,
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
-      tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      tenant: tenants.find((tenant: any) => tenant.name === tenantName),
       repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
@@ -1268,7 +1269,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sequence: obj.sequence,
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
-      tenant: tenants.find((tenant: any) => tenant.name.en === 'Ekstep'),
+      tenant: tenants.find((tenant: any) => tenant.name === tenantName),
       repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),

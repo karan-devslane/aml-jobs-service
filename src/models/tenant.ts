@@ -14,7 +14,7 @@ export const Tenant = AppDataSource.define(
       allowNull: false,
     },
     name: {
-      type: DataTypes.JSONB,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     type: {

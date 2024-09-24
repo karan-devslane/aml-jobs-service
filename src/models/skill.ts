@@ -9,6 +9,10 @@ export const SkillMaster = AppDataSource.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    identifier: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     name: {
       type: DataTypes.JSONB,
       allowNull: false,
@@ -20,7 +24,7 @@ export const SkillMaster = AppDataSource.define(
       comment: 'A short description of the skill',
     },
     type: {
-      type: DataTypes.ENUM('L1_skill', 'L2_skill', 'L3_skill'),
+      type: DataTypes.ENUM('l1_skill', 'l2_skill', 'l3_skill'), // Enum field for type
       allowNull: false,
       comment: 'The type/category of the skill',
     },

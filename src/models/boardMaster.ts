@@ -19,9 +19,10 @@ export const boardMaster = AppDataSource.define(
     },
     class_ids: {
       type: DataTypes.JSON,
+      allowNull: true,
     },
     skill_taxonomy_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.ARRAY(DataTypes.INTEGER), // Changed to array of integers
       allowNull: true,
     },
     description: {
