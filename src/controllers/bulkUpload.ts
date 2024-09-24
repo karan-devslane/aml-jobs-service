@@ -9,7 +9,7 @@ import { appConfiguration } from '../config';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
-import { createContent } from '../services/content ';
+import { createContent } from '../services/content';
 import { QuestionStage } from '../models/questionStage';
 import { QuestionSetStage } from '../models/questionSetStage';
 import { ContentStage } from '../models/contentStage';
@@ -134,7 +134,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<boolean> => {
     logger.error(`Zip Format:: ${Process_id} Unsupported file format, please upload a ZIP file.`);
     return false;
   }
-  await updateProcess(Process_id, { status: 'open', updated_by: 1 });
+  await updateProcess(Process_id, { status: 'progress', updated_by: 1 });
   logger.info(`Zip Format:: ${Process_id} Valid ZIP files, moving to next process`);
   await validateCSVFilesFormatInZip();
   return true;
