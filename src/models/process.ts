@@ -11,7 +11,7 @@ export const Process = AppDataSource.define(
     },
     description: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     process_id: {
       type: DataTypes.UUID,
@@ -20,10 +20,6 @@ export const Process = AppDataSource.define(
     fileName: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    error_fileName: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('open', 'progress', 'completed', 'failed', 'errored', 'reopen'),

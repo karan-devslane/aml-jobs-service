@@ -8,7 +8,7 @@ import AdmZip from 'adm-zip';
 import { appConfiguration } from '../config';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
-import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData } from '../services/questionSetStage';
+import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
 import { createContent } from '../services/content ';
 import { QuestionStage } from '../models/questionStage';
 import { QuestionSetStage } from '../models/questionSetStage';
@@ -246,7 +246,7 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]): Promi
 
 const handleQuestionCsv = async (questionsCsv: object[]) => {
   let questionData: object[] = [];
-  if (questionData.length === 0) {
+  if (questionsCsv.length === 0) {
     logger.error(`${Process_id} Question data validation resulted in empty data.`);
     return false;
   }
@@ -269,7 +269,7 @@ const handleQuestionCsv = async (questionsCsv: object[]) => {
 
 const handleQuestionSetCsv = async (questionSetsCsv: object[]) => {
   let questionSetsData: object[] = [];
-  if (questionSetsData.length === 0) {
+  if (questionSetsCsv.length === 0) {
     logger.error(`${Process_id} Question set data validation resulted in empty data.`);
     return false;
   }
@@ -292,7 +292,7 @@ const handleQuestionSetCsv = async (questionSetsCsv: object[]) => {
 
 const handleContentCsv = async (contentsCsv: object[]) => {
   let contentsData: object[] = [];
-  if (contentsData.length === 0) {
+  if (contentsCsv.length === 0) {
     logger.error(`${Process_id} Content data validation resulted in empty data.`);
     return false;
   }
@@ -391,6 +391,15 @@ const validateQuestionStage = async () => {
 const uploadQuestionStage = async (isValid: boolean) => {
   const processStatus = isValid ? 'validated' : 'errored';
   const getQuestions = await getAllStageQuestion();
+  if (getQuestions.error) {
+    logger.error('unexpected error occurred while get all stage data');
+    await updateProcess(Process_id, {
+      error_status: 'unexpected_error',
+      error_message: `unexpected error occurred while get all stage data`,
+      status: 'errored',
+    });
+    return false;
+  }
   await updateProcess(Process_id, { fileName: 'questions.csv', status: processStatus });
   const uploadQuestion = await convertToCSV(getQuestions, 'questions');
   if (!uploadQuestion) {
@@ -407,7 +416,15 @@ const uploadQuestionStage = async (isValid: boolean) => {
 const questionMediaProcess = async () => {
   try {
     const getQuestions = await getAllStageQuestion();
-
+    if (getQuestions.error) {
+      logger.error('unexpected error occurred while get all stage data');
+      await updateProcess(Process_id, {
+        error_status: 'unexpected_error',
+        error_message: `unexpected error occurred while get all stage data`,
+        status: 'errored',
+      });
+      return false;
+    }
     for (const question of getQuestions) {
       if (question.media_files?.length > 0) {
         const mediaFiles = await Promise.all(
@@ -545,6 +562,15 @@ const validateQuestionSetStage = async () => {
 const uploadQuestionSetStage = async (isValid: boolean) => {
   const processStatus = isValid ? 'validated' : 'errored';
   const questionSets = await getAllStageQuestionSet();
+  if (questionSets.error) {
+    logger.error('unexpected error occurred while get all stage data');
+    await updateProcess(Process_id, {
+      error_status: 'unexpected_error',
+      error_message: `unexpected error occurred while get all stage data`,
+      status: 'errored',
+    });
+    return false;
+  }
   await updateProcess(Process_id, { fileName: 'questionSet.csv', status: processStatus });
   const uploadQuestionSet = await convertToCSV(questionSets, 'questionSets');
   if (!uploadQuestionSet) {
@@ -645,6 +671,15 @@ const validateContentStage = async () => {
 const uploadContentStage = async (isValid: boolean) => {
   const processStatus = isValid ? 'validated' : 'errored';
   const getContents = await getAllStageContent();
+  if (getContents.error) {
+    logger.error('unexpected error occurred while get all stage data');
+    await updateProcess(Process_id, {
+      error_status: 'unexpected_error',
+      error_message: `unexpected error occurred while get all stage data`,
+      status: 'errored',
+    });
+    return false;
+  }
   await updateProcess(Process_id, { fileName: 'contents.csv', status: processStatus });
   const uploadContent = await convertToCSV(getContents, 'contents');
   if (!uploadContent) {
@@ -661,6 +696,15 @@ const uploadContentStage = async (isValid: boolean) => {
 const contentsMediaProcess = async () => {
   try {
     const getContents = await getAllStageContent();
+    if (getContents.error) {
+      logger.error('unexpected error occurred while get all stage data');
+      await updateProcess(Process_id, {
+        error_status: 'unexpected_error',
+        error_message: `unexpected error occurred while get all stage data`,
+        status: 'errored',
+      });
+      return false;
+    }
 
     for (const content of getContents) {
       if (content.media_files?.length > 0) {
@@ -734,7 +778,7 @@ const insertContentMain = async () => {
 
 const insertQuestionStage = async (insertData: object[]) => {
   const questionStage = await createQuestionStage(insertData);
-  if (!questionStage) {
+  if (questionStage.error) {
     logger.error(`Insert Staging:: ${Process_id} question bulk data error in inserting`);
     await updateProcess(Process_id, {
       error_status: 'errored',
@@ -749,7 +793,7 @@ const insertQuestionStage = async (insertData: object[]) => {
 
 const insertQuestionSetStage = async (insertData: object[]) => {
   const questionSetStage = await createQuestionSetStage(insertData);
-  if (!questionSetStage) {
+  if (questionSetStage.error) {
     logger.error(`Insert Question SetStaging:: ${Process_id} question set  bulk data error in inserting`);
     await updateProcess(Process_id, {
       error_status: 'errored',
@@ -764,7 +808,7 @@ const insertQuestionSetStage = async (insertData: object[]) => {
 
 const insertContentStage = async (insertData: object[]) => {
   const contentStage = await createContentStage(insertData);
-  if (!contentStage) {
+  if (contentStage.error) {
     logger.error(`Insert Content Staging:: ${Process_id} content bulk data error in inserting`);
     await updateProcess(Process_id, {
       error_status: 'errored',
@@ -779,6 +823,10 @@ const insertContentStage = async (insertData: object[]) => {
 
 const validateQuestionStageData = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
+  if (getAllQuestionStage.error) {
+    logger.error(`Validate Question Stage:: ${Process_id} ,th unexpected error .`);
+    return false;
+  }
   let isUnique = true;
   let isValid = true;
   if (_.isEmpty(getAllQuestionStage)) {
@@ -788,6 +836,10 @@ const validateQuestionStageData = async () => {
   for (const question of getAllQuestionStage) {
     const { id, question_id, question_set_id, question_type, L1_skill, body } = question;
     const checkRecord = await questionStageMetaData({ question_id, question_set_id, L1_skill, question_type });
+    if (checkRecord.error) {
+      logger.error(`Validate Question Stage:: ${Process_id} ,th unexpected error .`);
+      return false;
+    }
     if (checkRecord.length > 1) {
       await updateQuestionStage(
         { id },
@@ -843,6 +895,10 @@ const validateQuestionStageData = async () => {
 
 const validateQuestionSetStageData = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
+  if (getAllQuestionSetStage.error) {
+    logger.error(`Validate Question Set Stage:: ${Process_id} ,th unexpected error .`);
+    return false;
+  }
   let isValid = true;
   if (_.isEmpty(getAllQuestionSetStage)) {
     logger.info(`Validate Question set Stage:: ${Process_id} ,the staging Data is empty invalid format or errored fields`);
@@ -851,8 +907,12 @@ const validateQuestionSetStageData = async () => {
   for (const questionSet of getAllQuestionSetStage) {
     const { id, question_set_id, L1_skill } = questionSet;
     const checkRecord = await questionSetStageMetaData({ question_set_id, L1_skill });
+    if (checkRecord.error) {
+      logger.error(`Validate Question Set Stage:: ${Process_id} ,th unexpected error .`);
+      return false;
+    }
     if (checkRecord.length > 1) {
-      await updateQuestionStage(
+      await updateQuestionStageSet(
         { id },
         {
           status: 'errored',
@@ -872,7 +932,7 @@ const validateQuestionSetStageData = async () => {
 const validateContentStageData = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
   let isValid = true;
-  if (_.isEmpty(getAllContentStage)) {
+  if (getAllContentStage.error) {
     logger.error(`Validate Content Stage:: ${Process_id} ,the csv Data is invalid format or errored fields`);
     return false;
   }
@@ -898,61 +958,94 @@ const validateContentStageData = async () => {
 
 const stageDataToQuestion = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
+  if (getAllQuestionStage.error) {
+    logger.error(`Validate Question Stage:: ${Process_id} ,th unexpected error .`);
+    return false;
+  }
   const insertData = await formatQuestionStageData(getAllQuestionStage);
   if (!insertData) {
     await updateProcess(Process_id, {
       error_status: 'process_stage_data',
-      error_message: ' Error in formatting staging data to min table.',
+      error_message: ' Error in formatting staging data to main table.',
       status: 'errored',
     });
     return false;
   }
   const questionInsert = await createQuestion(insertData);
-  if (!questionInsert) {
-    logger.info(`Insert Question main:: ${Process_id} question bulk data inserted successfully to main table `);
-    return true;
+  if (questionInsert.error) {
+    logger.error(`Insert Question main:: ${Process_id} question bulk data error in inserting to main table`);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: 'Question question bulk data error in inserting',
+      status: 'errored',
+    });
+    return false;
   }
-  logger.error(`Insert Question main:: ${Process_id} question bulk data error in inserting to main table`);
-  await updateProcess(Process_id, {
-    error_status: 'errored',
-    error_message: 'Question question bulk data error in inserting',
-    status: 'errored',
-  });
-  return false;
+
+  return true;
 };
 
 const stageDataToQuestionSet = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: Process_id });
-  const insertData = await formatQuestionSetStageData(getAllQuestionSetStage);
-  const questionSetInsert = await createQuestionSet(insertData);
-  if (!questionSetInsert) {
-    logger.info(`Insert Question set main:: ${Process_id} question set bulk data inserted successfully to main table `);
-    return true;
+  if (getAllQuestionSetStage.error) {
+    logger.error(`Insert Question set main:: ${Process_id} ,the unexpected error .`);
+    return false;
   }
-  logger.error(`Insert Question set main:: ${Process_id} question set data error in inserting to main table`);
-  await updateProcess(Process_id, {
-    error_status: 'errored',
-    error_message: ' content bulk data error in inserting',
-    status: 'errored',
-  });
-  return false;
+  const insertData = await formatQuestionSetStageData(getAllQuestionSetStage);
+  if (!insertData) {
+    await updateProcess(Process_id, {
+      error_status: 'process_stage_data',
+      error_message: ' Error in formatting staging data to main table.',
+      status: 'errored',
+    });
+    return false;
+  }
+  const questionSetInsert = await createQuestionSet(insertData);
+  if (questionSetInsert.error) {
+    logger.error(`Insert Question set main:: ${Process_id} question set data error in inserting to main table`);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: ' content bulk data error in inserting',
+      status: 'errored',
+    });
+    return false;
+  }
+
+  return true;
 };
 
 const stageDataToContent = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: Process_id });
-  const insertData = await formatContentStageData(getAllContentStage);
-  const contentInsert = await createContent(insertData);
-  if (!contentInsert) {
-    logger.info(`Insert Content main:: ${Process_id} content bulk data inserted successfully to main table `);
-    return true;
+  if (getAllContentStage.error) {
+    logger.error(`Insert Content main:: ${Process_id} content bulk data error in inserting to main table`);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: ' content bulk data error in inserting',
+      status: 'errored',
+    });
+    return false;
   }
-  logger.error(`Insert Content main:: ${Process_id} content bulk data error in inserting to main table`);
-  await updateProcess(Process_id, {
-    error_status: 'errored',
-    error_message: ' content bulk data error in inserting',
-    status: 'errored',
-  });
-  return false;
+  const insertData = await formatContentStageData(getAllContentStage);
+  if (!insertData) {
+    await updateProcess(Process_id, {
+      error_status: 'process_stage_data',
+      error_message: ' Error in formatting staging data to main table.',
+      status: 'errored',
+    });
+    return false;
+  }
+  const contentInsert = await createContent(insertData);
+  if (contentInsert.error) {
+    logger.error(`Insert Content main:: ${Process_id} content bulk data error in inserting to main table`);
+    await updateProcess(Process_id, {
+      error_status: 'errored',
+      error_message: ' content bulk data error in inserting',
+      status: 'errored',
+    });
+    return false;
+  }
+
+  return true;
 };
 
 const getCSVTemplateHeader = async (entryName: string) => {
