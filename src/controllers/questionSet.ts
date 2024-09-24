@@ -421,9 +421,9 @@ const formatQuestionSetStageData = async (stageData: any[]) => {
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.type == obj.L1_skill),
-        l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.type === skill)),
-        l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.type === skill)),
+        l1_skill: skills.find((skill: any) => skill.name.en == obj.L1_skill),
+        l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
       sub_skills: obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       purpose: obj.purpose,
