@@ -1,7 +1,6 @@
 import logger from '../utils/logger';
 import * as _ from 'lodash';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
-import { updateProcess } from '../services/process';
 import AdmZip from 'adm-zip';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
@@ -9,7 +8,7 @@ import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenan
 let FILENAME: string;
 let Process_id: string;
 
-export const fetchAndExtractZipEntries = async (folderName: string, process_id: string, fileName: string): Promise<AdmZip.IZipEntry[]> => {
+export const fetchAndExtractZipEntries = async (folderName: string, process_id: string, fileName: string) => {
   Process_id = process_id;
   FILENAME = fileName;
   try {
@@ -22,12 +21,24 @@ export const fetchAndExtractZipEntries = async (folderName: string, process_id: 
     const buffer = (await streamToBuffer(bulkUploadFolder)) as Buffer;
     const zip = new AdmZip(buffer);
     logger.info('Cloud Process:: converted stream to zip entries');
-    return zip.getEntries();
+    return {
+      error: null,
+      result: {
+        isValid: true,
+        data: zip.getEntries(),
+      },
+    };
   } catch (error) {
     const code = _.get(error, 'code', 'UPLOAD_QUESTION_CRON');
     const errorMsg = error instanceof Error ? error.message : 'Error in the validation process,please re-upload the zip file for the new process';
     logger.error({ errorMsg, code });
-    return [];
+    return {
+      error: null,
+      result: {
+        isValid: false,
+        data: [],
+      },
+    };
   }
 };
 
@@ -42,18 +53,29 @@ export const streamToBuffer = (stream: any) => {
 
 export const getCSVTemplateHeader = async (entryName: string) => {
   const templateZipEntries = await fetchAndExtractZipEntries('template', Process_id, FILENAME);
-  const templateFileContent = templateZipEntries
+  const templateFileContent = templateZipEntries.result.data
     .find((t) => t.entryName === entryName)
     ?.getData()
     .toString('utf8');
   if (!templateFileContent) {
-    await updateProcess(Process_id, { error_status: 'invalid_template', error_message: `Template for '${entryName}' not found.`, status: 'failed' });
     logger.error(`Template:: The file '${entryName}' does not match the expected CSV format.`);
-    return [];
+    return {
+      error: { errStatus: 'invalid_template', errMsg: `Template for '${entryName}' not found.`, status: 'failed' },
+      result: {
+        isValid: false,
+        data: null,
+      },
+    };
   }
   const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
   logger.info('Template:: template header extracted.');
-  return templateHeader;
+  return {
+    error: null,
+    result: {
+      isValid: true,
+      data: templateHeader,
+    },
+  };
 };
 
 export const getCSVHeaderAndRow = (csvEntries: any) => {
@@ -64,22 +86,46 @@ export const getCSVHeaderAndRow = (csvEntries: any) => {
     .map((row: string) => row.split(','))
     .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
   logger.info('Row/Header:: header and rows are extracted');
-  return { header, rows };
+  return {
+    error: null,
+    result: {
+      isValid: true,
+      data: { header, rows },
+    },
+  };
 };
 
-export const validHeader = (entryName: string, header: any, templateHeader: any): boolean => {
+export const validHeader = (entryName: string, header: any, templateHeader: any) => {
   if (header.length !== templateHeader.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
-    return false;
+    return {
+      error: null,
+      result: {
+        isValid: false,
+        data: null,
+      },
+    };
   }
 
   const validHeader = templateHeader.every((col: any, i: number) => col === header[i]);
   if (!validHeader) {
     logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
-    return false;
+    return {
+      error: null,
+      result: {
+        isValid: false,
+        data: null,
+      },
+    };
   }
   logger.info(`Header validate:: ${entryName} contain valid header`);
-  return true;
+  return {
+    error: null,
+    result: {
+      isValid: true,
+      data: null,
+    },
+  };
 };
 
 export const processRow = (rows: string[][], header: string[]) => {
@@ -131,20 +177,14 @@ export const convertToCSV = async (jsonData: any, fileName: string) => {
 };
 
 export const preloadData = async () => {
-  try {
-    const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
-
-    logger.info('Preloaded:: preloading metadata from table.');
-
-    return {
-      boards,
-      classes,
-      skills,
-      tenants,
-      subSkills,
-      repositories,
-    };
-  } catch (error) {
-    logger.error('Error while preloading data: ', error);
-  }
+  const [boards, classes, skills, subSkills, tenants, repositories] = await Promise.all([getBoards(), getClasses(), getSkills(), getSubSkills(), getTenants(), getRepository()]);
+  logger.info('Preloaded:: preloading metadata from table.');
+  return {
+    boards,
+    classes,
+    skills,
+    tenants,
+    subSkills,
+    repositories,
+  };
 };

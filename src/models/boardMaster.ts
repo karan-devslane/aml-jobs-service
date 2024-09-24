@@ -11,7 +11,7 @@ export const boardMaster = AppDataSource.define(
     },
     identifier: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     name: {
       type: DataTypes.JSONB,

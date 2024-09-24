@@ -11,6 +11,7 @@ import { fetchAndExtractZipEntries } from '../services/util';
 import { handleQuestionCsv, stageDataToQuestion } from './question';
 import { handleQuestionSetCsv, stageDataToQuestionSet } from './questionSet';
 import { handleContentCsv, stageDataToContent } from './content';
+import { Status } from '../enums/status';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval } = appConfiguration;
 let FILENAME: string;
@@ -31,7 +32,7 @@ export const bulkUploadProcess = async () => {
       logger.info(`initiate:: bulk upload job for process id :${process_id}.`);
       Process_id = process_id;
       const IsStaleProcess = await markStaleProcessesAsErrored(created_at);
-      if (IsStaleProcess.data.isStale) {
+      if (IsStaleProcess.result.isStale) {
         logger.info(`Stale:: Process ${Process_id} is stale, skipping.`);
         continue;
       }
@@ -42,49 +43,46 @@ export const bulkUploadProcess = async () => {
         continue;
       }
       logger.info(`initiate:: bulk upload folder validation for process id :${process_id}.`);
-      const validateZip = await validateZipFile(bulkUploadMetadata.Contents);
+      const zipValidation = await validateZipFile(bulkUploadMetadata.Contents);
       const {
-        data: { isValid },
-      } = validateZip;
-      if (!isValid) {
+        result: { isValidZip },
+      } = zipValidation;
+      if (!isValidZip) {
         await updateProcess(Process_id, {
-          error_status: validateZip.error.errorStatus,
-          error_message: validateZip.error.errMsg,
-          status: validateZip.error.status,
+          error_status: zipValidation.error.errStatus,
+          error_message: zipValidation.error.errMsg,
+          status: Status.FAILED,
         });
         continue;
       }
-      const validateCsv = await validateCSVFilesFormatInZip();
+      const csvValidation = await validateCSVFilesFormatInZip();
       const {
-        data: { isValidCsv, csvZipEntries },
-      } = validateCsv;
+        result: { isValidCsv, data },
+      } = csvValidation;
       if (!isValidCsv) {
         await updateProcess(Process_id, {
-          error_status: validateCsv.error.errorStatus,
-          error_message: validateCsv.error.errMsg,
-          status: validateCsv.error.status,
+          error_status: csvValidation.error.errStatus,
+          error_message: csvValidation.error.errMsg,
+          status: Status.FAILED,
         });
         continue;
       }
-      const handleCsv = await handleCSVEntries(csvZipEntries);
-      const {
-        data: { validData },
-      } = handleCsv;
-      if (!validData) {
+      const handleCsv = await handleCSVEntries(data);
+      if (!handleCsv.result.isValid) {
         await updateProcess(Process_id, {
-          error_status: handleCsv.error.errorStatus,
+          error_status: handleCsv.error.errStatus,
           error_message: handleCsv.error.errMsg,
-          status: handleCsv.error.status,
+          status: Status.FAILED,
         });
         continue;
       }
-      await updateProcess(Process_id, { status: 'completed' });
+      await updateProcess(Process_id, { status: Status.COMPLETED });
       logger.info(`Completed:: ${Process_id} process validation for bulk upload question ,question set and content successfully inserted`);
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation.Re upload file for new process';
     await updateProcess(Process_id, {
-      status: 'errored',
+      status: Status.ERROR,
       error_status: 'errored',
       error_message: `Failed to retrieve metadata for process id: ${Process_id}. ${errorMsg}.Re upload file for new process`,
     });
@@ -92,17 +90,12 @@ export const bulkUploadProcess = async () => {
   }
 };
 
-const markStaleProcessesAsErrored = async (created_at: Date): Promise<any> => {
+const markStaleProcessesAsErrored = (created_at: Date): any => {
   const timeDifference = Math.floor((Date.now() - created_at.getTime()) / (1000 * 60 * 60));
   if (timeDifference > fileUploadInterval) {
-    await updateProcess(Process_id, {
-      error_status: 'empty',
-      error_message: 'The uploaded zip folder is empty, please ensure a valid upload file.',
-      status: 'failed',
-    });
     logger.error('Stale process:: The uploaded zip folder is empty, please ensure a valid upload file.');
     return {
-      error: 'error',
+      error: { errStatus: 'empty', errMsg: 'The uploaded zip folder is empty, please ensure a valid upload file.' },
       result: {
         isStale: true,
       },
@@ -117,10 +110,10 @@ const markStaleProcessesAsErrored = async (created_at: Date): Promise<any> => {
 };
 
 const handleFailedProcess = async () => {
-  const processesInfo = await getProcessMetaData({ status: 'progress' });
+  const processesInfo = await getProcessMetaData({ status: Status.PROGRESS });
   const { getAllProcess } = processesInfo;
   for (const process of getAllProcess) {
-    await updateProcess(Process_id, { status: 'reopen' });
+    await updateProcess(Process_id, { status: Status.REOPEN });
     const { process_id, fileName, created_at } = process;
     FILENAME = fileName;
     Process_id = process_id;
@@ -129,10 +122,10 @@ const handleFailedProcess = async () => {
     if (timeDifference > reCheckProcessInterval) {
       const isSuccessStageProcess = await checkStagingProcess();
       if (!isSuccessStageProcess) {
-        await updateProcess(Process_id, { status: 'errored', error_status: 'errored', error_message: 'The csv Data is invalid format or errored fields.Re upload file for new process' });
+        await updateProcess(Process_id, { status: Status.ERROR, error_status: 'errored', error_message: 'The csv Data is invalid format or errored fields.Re upload file for new process' });
         logger.error(`Re-open process:: The csv Data is invalid format or errored fields for process id: ${process_id}`);
       } else {
-        await updateProcess(Process_id, { status: 'completed' });
+        await updateProcess(Process_id, { status: Status.COMPLETED });
         logger.info(`Re-open process:: ${Process_id} Process completed successfully.`);
       }
     }
@@ -143,17 +136,17 @@ const checkStagingProcess = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: Process_id });
   if (_.isEmpty(getAllQuestionStage)) {
     logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
-    return { error: 'error', result: { validStageData: false, data: null } };
+    return { error: { errStatus: '', errMsg: '' }, result: { validStageData: false, data: null } };
   } else {
     const getAllQuestionSetStage = await questionSetStageMetaData({ status: 'success', process_id: Process_id });
     if (_.isEmpty(getAllQuestionSetStage)) {
       logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
-      return { error: 'error', result: { validStageData: false, data: null } };
+      return { error: { errStatus: '', errMsg: '' }, result: { validStageData: false, data: null } };
     } else {
       const getAllContentStage = await contentStageMetaData({ status: 'success', process_id: Process_id });
       if (_.isEmpty(getAllContentStage)) {
         logger.info(`Re-open:: ${Process_id} ,the csv Data is invalid format or errored fields`);
-        return { error: 'error', result: { validStageData: false, data: null } };
+        return { error: { errStatus: '', errMsg: '' }, result: { validStageData: false, data: null } };
       }
     }
   }
@@ -166,15 +159,13 @@ const checkStagingProcess = async () => {
 const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
   const fileExt = path.extname(bulkUploadMetadata[0].Key || '').toLowerCase();
   if (fileExt !== '.zip') {
-    await updateProcess(Process_id, {
-      error_status: 'unsupported_format',
-      error_message: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.',
-      status: 'failed',
-    });
     logger.error(`Zip Format:: ${Process_id} Unsupported file format, please upload a ZIP file.`);
-    return { error: 'Error', result: { isValidZip: false, data: null } };
+    return {
+      error: { errStatus: 'unsupported_format', errMsg: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.' },
+      result: { isValidZip: false, data: null },
+    };
   }
-  await updateProcess(Process_id, { status: 'progress', updated_by: 1 });
+  await updateProcess(Process_id, { status: Status.PROGRESS, updated_by: 1 });
   logger.info(`Zip Format:: ${Process_id} having valid zip file.`);
   return { error: null, result: { isValidZip: true, data: null } };
 };
@@ -184,28 +175,32 @@ const validateCSVFilesFormatInZip = async (): Promise<any> => {
     logger.info(`Zip extract:: ${Process_id} initiated to fetch and extract ZIP entries...`);
     const ZipEntries = await fetchAndExtractZipEntries('upload', Process_id, FILENAME);
 
+    if (!ZipEntries.result.isValid) {
+      return {
+        error: { errStatus: 'invalid Zip', errMsg: `The uploaded  ZIP folder file format is invalid` },
+        result: { isValidCsv: false, data: null },
+      };
+    }
+    const zipEntries = ZipEntries?.result?.data;
+
     logger.info('Zip extract:: Filtering ZIP entries from media entries.');
-    mediaEntries = ZipEntries.filter((e) => !e.entryName.endsWith('.csv'));
-    const csvZipEntries = ZipEntries.filter((e) => e.entryName.endsWith('.csv'));
+    mediaEntries = zipEntries?.filter((e: any) => !e.entryName.endsWith('.csv'));
+    const csvZipEntries = zipEntries?.filter((e: any) => e.entryName.endsWith('.csv'));
 
     for (const entry of csvZipEntries) {
       if (entry.isDirectory && entry.entryName.includes('.csv')) {
-        await updateProcess(Process_id, {
-          error_status: 'unsupported_folder_type',
-          error_message: `The uploaded '${entry.entryName}' ZIP folder file format is invalid`,
-          status: 'failed',
-        });
         logger.error(`File Format:: ${Process_id} The uploaded ZIP folder file format is in valid`);
-        return { error: 'Error', result: { isValidCsv: false, data: null } };
+        return {
+          error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded '${entry.entryName}' ZIP folder file format is invalid` },
+          result: { isValidCsv: false, data: null },
+        };
       }
       if (!csvFileName.includes(entry.entryName)) {
-        await updateProcess(Process_id, {
-          error_status: 'unsupported_folder_type',
-          error_message: `The uploaded file '${entry.entryName}' is not a valid file name.`,
-          status: 'failed',
-        });
         logger.error(`File Format:: ${Process_id} The uploaded file '${entry.entryName}' is not a valid file name.`);
-        return { error: 'Error', result: { isValidCsv: false, data: null } };
+        return {
+          error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded file '${entry.entryName}' is not a valid file name.` },
+          result: { isValidCsv: false, data: null },
+        };
       }
     }
 
@@ -213,11 +208,11 @@ const validateCSVFilesFormatInZip = async (): Promise<any> => {
     return { error: null, result: { isValidCsv: true, data: csvZipEntries } };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation,please re upload the zip file for the new process';
-    return { error: errorMsg, result: { isValidCsv: false, data: null } };
+    return { error: { errStatus: 'un-expected', errMsg: errorMsg }, result: { isValidCsv: true, data: null } };
   }
 };
 
-const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]): Promise<any> => {
+const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]) => {
   try {
     const validData = {
       questions: [] as object[],
@@ -246,27 +241,27 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]): Promi
     }
     logger.info(`Question Validate::csv Data validation initiated for questions`);
     const questionCsv = await handleQuestionCsv(validData.questions, mediaEntries, Process_id);
-    if (!questionCsv) {
+    if (!questionCsv.result.isValid) {
       logger.error('Question:: Error in question csv validation');
-      return { error: 'error', result: { validData: false, data: null } };
+      return { error: { errStatus: 'un-expected', errMsg: 'Error in question csv validation' }, result: { isValid: false, data: null } };
     }
 
     logger.info(`Question Set Validate::csv Data validation initiated for question sets`);
     const questionSetCsv = await handleQuestionSetCsv(validData.questionSets, Process_id);
     if (!questionSetCsv) {
-      logger.error('Question:: Error in question csv validation');
-      return { error: 'error', result: { validData: false, data: null } };
+      logger.error('Question set:: Error in question set csv validation');
+      return { error: { errStatus: 'un-expected', errMsg: 'Error in question set csv validation' }, result: { isValid: false, data: null } };
     }
 
     logger.info(`Content Validate::csv Data validation initiated for contents`);
     const contentCsv = await handleContentCsv(validData.contents, mediaEntries, Process_id);
-    if (!contentCsv) {
-      logger.error('Question:: Error in question csv validation');
-      return { error: 'error', result: { validData: false, data: null } };
+    if (!contentCsv.result.isValid) {
+      logger.error('content:: Error in question csv validation');
+      return { error: { errStatus: 'un-expected', errMsg: 'Error in content csv validation' }, result: { isValid: false, data: null } };
     }
-    return { error: null, result: { validData: true, data: null } };
+    return { error: { errStatus: '', errMsg: '' }, result: { isValid: true, data: null } };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation csv data,please re upload the zip file for the new process';
-    return { error: errorMsg, result: { isValidCsv: false, data: null } };
+    return { error: { errStatus: 'errored', errMsg: errorMsg }, result: { isValid: false, data: null } };
   }
 };
