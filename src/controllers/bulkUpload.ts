@@ -12,6 +12,8 @@ import { handleQuestionCsv, stageDataToQuestion } from './question';
 import { handleQuestionSetCsv, stageDataToQuestionSet } from './questionSet';
 import { handleContentCsv, stageDataToContent } from './content';
 import { Status } from '../enums/status';
+import { Content } from '../models/content';
+import { QuestionSet } from '../models/questionSet';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval } = appConfiguration;
 let FILENAME: string;
@@ -259,6 +261,7 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]) => {
     const questionSetCsv = await handleQuestionSetCsv(validData.questionSets, Process_id);
     if (!questionSetCsv) {
       logger.error('Question set:: Error in question set csv validation');
+      await Content.destroy({ where: { process_id: Process_id } });
       return questionSetCsv;
     }
 
@@ -266,6 +269,8 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]) => {
     const questionCsv = await handleQuestionCsv(validData.questions, mediaEntries, Process_id);
     if (!questionCsv.result.isValid) {
       logger.error('Question:: Error in question csv validation');
+      await Content.destroy({ where: { process_id: Process_id } });
+      await QuestionSet.destroy({ where: { process_id: Process_id } });
       return questionCsv;
     }
     return { error: { errStatus: null, errMsg: null }, result: { isValid: true, data: null } };
