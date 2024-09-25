@@ -17,7 +17,7 @@ export const Process = AppDataSource.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
-    fileName: {
+    file_name: {
       type: DataTypes.STRING,
       allowNull: false,
     },

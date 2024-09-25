@@ -1,5 +1,4 @@
 import logger from '../utils/logger';
-import * as _ from 'lodash';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
 import { Parser } from '@json2csv/plainjs';
@@ -12,26 +11,25 @@ export const fetchAndExtractZipEntries = async (folderName: string, process_id: 
   Process_id = process_id;
   FILENAME = fileName;
   try {
-    let bulkUploadFolder;
+    let bulkUploadStream;
     if (folderName === 'upload') {
-      bulkUploadFolder = await getAWSFolderData(`upload/${process_id}/${fileName}`);
+      bulkUploadStream = await getAWSFolderData(`upload/${process_id}/${fileName}`);
     } else {
-      bulkUploadFolder = await getAWSFolderData(`template/${fileName}`);
+      bulkUploadStream = await getAWSFolderData(`template/${fileName}`);
     }
-    const buffer = (await streamToBuffer(bulkUploadFolder)) as Buffer;
-    const zip = new AdmZip(buffer);
+    const bulkUploadBuffer = (await streamToBuffer(bulkUploadStream)) as Buffer;
+    const bulkUploadZip = new AdmZip(bulkUploadBuffer);
     logger.info('Cloud Process:: converted stream to zip entries');
     return {
       error: null,
       result: {
         isValid: true,
-        data: zip.getEntries(),
+        data: bulkUploadZip.getEntries(),
       },
     };
   } catch (error) {
-    const code = _.get(error, 'code', 'UPLOAD_QUESTION_CRON');
     const errorMsg = error instanceof Error ? error.message : 'Error in the validation process,please re-upload the zip file for the new process';
-    logger.error({ errorMsg, code });
+    logger.error(errorMsg);
     return {
       error: null,
       result: {
