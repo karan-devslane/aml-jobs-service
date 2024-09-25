@@ -21,6 +21,18 @@ export const Process = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    content_error_file_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    question_error_file_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    question_set_error_file_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     status: {
       type: DataTypes.ENUM('open', 'progress', 'completed', 'failed', 'errored', 'reopen'),
       allowNull: false,

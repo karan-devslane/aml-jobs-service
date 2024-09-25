@@ -8,6 +8,7 @@ import { createContent } from '../services/content';
 import { ContentStage } from '../models/contentStage';
 import { updateQuestionStage } from '../services/questionStage';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { Status } from '../enums/status';
 
 let mediaEntries: any[];
 let Process_id: string;
@@ -54,15 +55,17 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
   }
   logger.info('Insert content Stage::content Data ready for bulk insert');
 
-  const createQuestionSetStage = await insertBulkContentStage(contentsData);
-  if (!createQuestionSetStage.result.isValid) {
+  const createContent = await insertBulkContentStage(contentsData);
+  if (!createContent.result.isValid) {
     logger.error('Error while creating stage question table');
-    return createQuestionSetStage;
+    return createContent;
   }
   const validateContent = await validateContentStage();
-  await uploadContentStage(validateContent.result.isValid);
+
   if (!validateContent.result.isValid) {
-    logger.error('Error while validating stage content data');
+    logger.error('Content Validation::Error while validating stage content data');
+    const uploadContent = await uploadContentStage();
+    if (!uploadContent.result.isValid) return uploadContent;
     return validateContent;
   }
   const contentMedia = await contentsMediaProcess();
@@ -161,8 +164,7 @@ const validateContentStage = async () => {
   return validContentStage;
 };
 
-const uploadContentStage = async (isValid: boolean) => {
-  const processStatus = isValid ? 'validated' : 'errored';
+const uploadContentStage = async () => {
   const getContents = await getAllStageContent();
   if (getContents.error) {
     logger.error('unexpected error occurred while get all stage data');
@@ -174,7 +176,7 @@ const uploadContentStage = async (isValid: boolean) => {
       },
     };
   }
-  await updateProcess(Process_id, { fileName: 'contents.csv', status: processStatus });
+  await updateProcess(Process_id, { content_error_file_name: 'content.csv', status: Status.ERROR });
   const uploadContent = await convertToCSV(getContents, 'contents');
   if (!uploadContent) {
     logger.error('Upload Cloud::Unexpected error occurred while upload to cloud');

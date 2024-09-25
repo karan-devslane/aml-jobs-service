@@ -6,6 +6,7 @@ import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaDat
 import { QuestionSetStage } from '../models/questionSetStage';
 import { createQuestionSet } from '../services/questionSet';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { Status } from '../enums/status';
 
 let Process_id: string;
 
@@ -62,9 +63,10 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
     return createQuestionSetStage;
   }
   const validateQuestionSet = await validateQuestionSetStage();
-  await uploadQuestionSetStage(validateQuestionSet.result.isValid);
   if (!validateQuestionSet.result.isValid) {
     logger.error('Error while validating stage question set data');
+    const uploadQuestionSet = await uploadQuestionSetStage();
+    if (!uploadQuestionSet.result.isValid) return uploadQuestionSet;
     return validateQuestionSet;
   }
   const mainQuestionSet = await insertQuestionSetMain();
@@ -163,8 +165,7 @@ const validateQuestionSetStage = async () => {
   return validQuestionSetStage;
 };
 
-const uploadQuestionSetStage = async (isValid: boolean) => {
-  const processStatus = isValid ? 'validated' : 'errored';
+const uploadQuestionSetStage = async () => {
   const questionSets = await getAllStageQuestionSet();
   if (questionSets.error) {
     logger.error('unexpected error occurred while get all stage data');
@@ -176,7 +177,7 @@ const uploadQuestionSetStage = async (isValid: boolean) => {
       },
     };
   }
-  await updateProcess(Process_id, { fileName: 'questionSet.csv', status: processStatus });
+  await updateProcess(Process_id, { question_set_error_file_name: 'questionSet.csv', status: Status.ERROR });
   const uploadQuestionSet = await convertToCSV(questionSets, 'questionSets');
   if (!uploadQuestionSet) {
     logger.error('Upload Cloud::Unexpected error occurred while upload to cloud');
