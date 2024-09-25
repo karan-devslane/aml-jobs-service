@@ -19,6 +19,7 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
       error: { errStatus: 'Empty', errMsg: 'empty question set data found' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
@@ -26,12 +27,7 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
     const validQuestionSetData = await validateCSVQuestionSetHeaderRow(questionSet);
     if (!validQuestionSetData.result.isValid) {
       logger.error('error while progressing data');
-      return {
-        error: { errStatus: 'Empty', errMsg: 'error while progressing question set data' },
-        result: {
-          isValid: false,
-        },
-      };
+      return validQuestionSetData;
     }
     const {
       result: { data },
@@ -43,6 +39,7 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
         error: { errStatus: 'in valid row', errMsg: 'in valid row are header found for question' },
         result: {
           isValid: false,
+          data: null,
         },
       };
     }
@@ -69,12 +66,7 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
   await uploadQuestionSetStage(validateQuestionSet.result.isValid);
   if (!validateQuestionSet.result.isValid) {
     logger.error('Error while validating stage question set data');
-    return {
-      error: { errStatus: 'error', errMsg: 'error while validating stage data for question set table' },
-      result: {
-        isValid: false,
-      },
-    };
+    return validateQuestionSet;
   }
   const mainQuestionSet = await insertQuestionSetMain();
   return mainQuestionSet;
@@ -87,6 +79,7 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
@@ -97,6 +90,7 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
       error: { errStatus: 'Missing row/header', errMsg: 'Question Row/header::Template header, or rows are missing' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
@@ -113,13 +107,14 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
       error: { errStatus: 'Missing row/header', errMsg: 'Question Row/header::Template header, header, or rows are missing' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
 
   logger.info(`Question Set Row/header:: Row and Header mapping process started for ${Process_id} `);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: questionSetRowHeader.result.data,
@@ -140,13 +135,13 @@ const questionSetRowHeaderProcess = async (rows: any, header: any) => {
       error: { errStatus: 'process_error', errMsg: 'Row processing failed or returned empty data' },
       result: {
         isValid: false,
-        data: [],
+        data: processData,
       },
     };
   }
   logger.info('Insert Question Set Stage::Question sets  Data ready for bulk insert');
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: processData,
@@ -163,17 +158,12 @@ const insertBulkQuestionSetStage = async (questionSetData: any) => {
       error_message: 'Insert Question Set Stage:: Failed to insert process data into staging',
       status: 'errored',
     });
-    return {
-      error: { errStatus: 'staging_insert_error', errMsg: 'Failed to insert question Set process data into staging' },
-      result: {
-        isValid: false,
-      },
-    };
+    return stageProcessData;
   }
 
   logger.info(`Validate question set Stage::question sets Data ready for validation process`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -229,7 +219,7 @@ const uploadQuestionSetStage = async (isValid: boolean) => {
 
   logger.info(`Question set Bulk Insert::${Process_id} is Ready for inserting bulk upload to question`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -246,20 +236,14 @@ const insertQuestionSetMain = async () => {
       error_message: `Question set staging data are invalid for main question set insert`,
       status: 'errored',
     });
-    return {
-      error: { errStatus: 'main_insert_error', errMsg: `Bulk Insert staging data are invalid to format main question set insert` },
-      result: {
-        isValid: false,
-        data: null,
-      },
-    };
+    return insertToMainQuestionSet;
   }
 
   await updateProcess(Process_id, { status: 'completed' });
   await QuestionSetStage.truncate({ restartIdentity: true });
   logger.info(`Question set bulk upload:: completed successfully and question_sets.csv file upload to cloud for Process ID: ${Process_id}`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -286,7 +270,7 @@ const insertQuestionSetStage = async (insertData: object[]) => {
   }
   logger.info(`Insert Question Set Staging:: ${Process_id} question set bulk data inserted successfully to staging table `);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -326,6 +310,7 @@ const validateQuestionSetStageData = async () => {
         error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error .` },
         result: {
           isValid: false,
+          data: null,
         },
       };
     }
@@ -343,7 +328,7 @@ const validateQuestionSetStageData = async () => {
   }
   logger.info(`Validate Question set Stage:: ${Process_id} , the staging Data question set is valid`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: isValid,
       data: null,
@@ -371,7 +356,7 @@ export const stageDataToQuestionSet = async () => {
       status: 'errored',
     });
     return {
-      error: { errStatus: 'process_stage_data', errMsg: 'Error in formatting staging data to main table.' },
+      error: { errStatus: 'process_stage_data', errMsg: 'Error in formatting staging data question set to main table.' },
       result: {
         isValid: false,
         data: null,
@@ -383,7 +368,7 @@ export const stageDataToQuestionSet = async () => {
     logger.error(`Insert Question set main:: ${Process_id} question set data error in inserting to main table`);
     await updateProcess(Process_id, {
       error_status: 'errored',
-      error_message: ' content bulk data error in inserting',
+      error_message: ' question Set bulk data error in inserting',
       status: 'errored',
     });
     return {
@@ -396,7 +381,7 @@ export const stageDataToQuestionSet = async () => {
   }
 
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,

@@ -70,7 +70,7 @@ export const getCSVTemplateHeader = async (entryName: string) => {
   const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
   logger.info('Template:: template header extracted.');
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: templateHeader,
@@ -87,7 +87,7 @@ export const getCSVHeaderAndRow = (csvEntries: any) => {
     .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
   logger.info('Row/Header:: header and rows are extracted');
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: { header, rows },
@@ -99,10 +99,10 @@ export const validHeader = (entryName: string, header: any, templateHeader: any)
   if (header.length !== templateHeader.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return {
-      error: null,
+      error: { errStatus: '', errMsg: '' },
       result: {
         isValid: false,
-        data: null,
+        data: {},
       },
     };
   }
@@ -111,7 +111,7 @@ export const validHeader = (entryName: string, header: any, templateHeader: any)
   if (!validHeader) {
     logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
     return {
-      error: null,
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the expected CSV format.` },
       result: {
         isValid: false,
         data: null,
@@ -120,7 +120,7 @@ export const validHeader = (entryName: string, header: any, templateHeader: any)
   }
   logger.info(`Header validate:: ${entryName} contain valid header`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,

@@ -23,6 +23,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
       error: { errStatus: 'Empty', errMsg: 'empty content set data found' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
@@ -30,12 +31,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
     const validContentData = await validateCSVContentHeaderRow(contents);
     if (!validContentData.result.isValid) {
       logger.error('Content csv::error while progressing data');
-      return {
-        error: { errStatus: 'Empty', errMsg: 'error while progressing data' },
-        result: {
-          isValid: false,
-        },
-      };
+      return validContentData;
     }
     const {
       result: { data },
@@ -43,12 +39,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
     const validData = await contentRowHeaderProcess(data?.rows, data?.header);
     if (!validData.result.isValid) {
       logger.error('error while processing data');
-      return {
-        error: { errStatus: 'in valid row', errMsg: 'in valid row are header found for content' },
-        result: {
-          isValid: false,
-        },
-      };
+      return validData;
     }
     const { result } = validData;
     contentsData = contentsData.concat(result.data);
@@ -73,26 +64,17 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
   await uploadContentStage(validateContent.result.isValid);
   if (!validateContent.result.isValid) {
     logger.error('Error while validating stage content data');
-    return {
-      error: { errStatus: 'error', errMsg: 'error while validating stage data for content table' },
-      result: {
-        isValid: false,
-      },
-    };
+    return validateContent;
   }
   const contentMedia = await contentsMediaProcess();
   if (!contentMedia.result.isValid) {
     logger.error('Error while validating stage content media');
-    return {
-      error: { errStatus: 'error', errMsg: 'error while validating stage data for content media' },
-      result: {
-        isValid: false,
-      },
-    };
+    return contentMedia;
   }
   const mainQuestionSet = await insertContentMain();
   return mainQuestionSet;
 };
+
 const validateCSVContentHeaderRow = async (contentEntry: any) => {
   const templateHeader = await getCSVTemplateHeader(contentEntry.entryName);
   if (!templateHeader.result.isValid) {
@@ -100,18 +82,14 @@ const validateCSVContentHeaderRow = async (contentEntry: any) => {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
       result: {
         isValid: false,
+        data: null,
       },
     };
   }
   const contentRowHeader = getCSVHeaderAndRow(contentEntry);
   if (!contentRowHeader.result.isValid) {
     logger.error('Content Row/Header:: Template header, header, or rows are missing');
-    return {
-      error: { errStatus: 'Missing row/header', errMsg: 'content Template header, or rows are missing' },
-      result: {
-        isValid: false,
-      },
-    };
+    return contentRowHeader;
   }
 
   const {
@@ -123,17 +101,12 @@ const validateCSVContentHeaderRow = async (contentEntry: any) => {
   const isValidHeader = validHeader(contentEntry.entryName, header, templateHeader.result.data);
   if (!isValidHeader) {
     logger.error('Content Row/Header:: Header validation failed');
-    return {
-      error: { errStatus: 'Missing row/header', errMsg: 'content Template header, or rows are missing' },
-      result: {
-        isValid: false,
-      },
-    };
+    return isValidHeader;
   }
 
   logger.info(`content Row/Header:: Row and Header mapping process started for ${Process_id} `);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: contentRowHeader.result.data,
@@ -154,13 +127,13 @@ const contentRowHeaderProcess = async (rows: any, header: any) => {
       error: { errStatus: 'process_error', errMsg: 'Row processing failed or returned empty data' },
       result: {
         isValid: false,
-        data: [],
+        data: processData,
       },
     };
   }
   logger.info('Insert content Stage:: Data ready for bulk insert to staging.');
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: processData,
@@ -177,17 +150,12 @@ const insertBulkContentStage = async (insertData: object[]) => {
       error_message: 'Content Failed to insert process data into staging',
       status: 'errored',
     });
-    return {
-      error: { errStatus: 'staging_insert_error', errMsg: 'Failed to insert content process data into staging' },
-      result: {
-        isValid: false,
-      },
-    };
+    return contentStage;
   }
 
   logger.info(`Validate Content Stage::Staged contents Data ready for validation`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -242,7 +210,7 @@ const uploadContentStage = async (isValid: boolean) => {
   logger.info('Content csv upload:: all the data are validated successfully and uploaded to cloud for reference');
   logger.info(`Content Media upload:: ${Process_id} content Stage data is ready for upload media to cloud`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -317,7 +285,8 @@ const contentsMediaProcess = async () => {
     logger.info('Content Media upload:: Media inserted and updated in the stage table');
     logger.info(`Content Main Insert::${Process_id} is Ready for inserting bulk upload to question`);
     return {
-      error: null,
+      error: { errStatus: '', errMsg: '' },
+
       result: {
         isValid: true,
         data: null,
@@ -331,7 +300,8 @@ const contentsMediaProcess = async () => {
       status: 'errored',
     });
     return {
-      error: null,
+      error: { errStatus: '', errMsg: '' },
+
       result: {
         isValid: false,
         data: null,
@@ -349,13 +319,7 @@ const insertContentMain = async () => {
       error_message: `Content staging data are invalid for main question insert`,
       status: 'errored',
     });
-    return {
-      error: { errStatus: 'main_insert_error', errMsg: `Bulk Insert staging data are invalid format main content insert` },
-      result: {
-        isValid: false,
-        data: null,
-      },
-    };
+    return insertToMainContent;
   }
 
   logger.info(`Content Main insert:: bulk upload completed  for Process ID: ${Process_id}`);
@@ -363,7 +327,7 @@ const insertContentMain = async () => {
   await ContentStage.truncate({ restartIdentity: true });
   logger.info(`Completed:: ${Process_id} Content csv uploaded successfully`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -390,7 +354,7 @@ const insertContentStage = async (insertData: object[]) => {
   }
   logger.info(`Insert Content Staging:: ${Process_id} content bulk data inserted successfully to staging table `);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
@@ -438,7 +402,7 @@ const validateContentStageData = async () => {
 
   logger.info(`Validate Content Stage:: ${Process_id} , the staging Data content is valid`);
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: isValid,
       data: null,
@@ -494,9 +458,8 @@ export const stageDataToContent = async () => {
       },
     };
   }
-
   return {
-    error: null,
+    error: { errStatus: '', errMsg: '' },
     result: {
       isValid: true,
       data: null,
