@@ -8,16 +8,11 @@ import logger from '../utils/logger';
 
 export const getTenants = async (): Promise<any> => {
   try {
-    const Tenants = await Tenant.findAll({
+    const tenants = await Tenant.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name'] },
+      attributes: ['id', 'name'],
+      raw: true,
     });
-
-    const tenants = Tenants.map((tenant) => ({
-      id: tenant.dataValues.id,
-      name: JSON.parse(tenant.dataValues.name),
-    }));
-
     return tenants;
   } catch (error) {
     logger.error(error);
@@ -29,15 +24,11 @@ export const getTenants = async (): Promise<any> => {
 
 export const getBoards = async (): Promise<any> => {
   try {
-    const Boards = await boardMaster.findAll({
+    const boards = await boardMaster.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name'] },
+      attributes: ['id', 'name'],
+      raw: true,
     });
-
-    const boards = Boards.map((board) => ({
-      id: board.dataValues.id,
-      name: board.dataValues.name,
-    }));
     return boards;
   } catch (error) {
     logger.error(error);
@@ -49,16 +40,11 @@ export const getBoards = async (): Promise<any> => {
 
 export const getClasses = async (): Promise<any> => {
   try {
-    const Classes = await classMaster.findAll({
+    const classes = await classMaster.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name'] },
+      attributes: ['id', 'name'],
+      raw: true,
     });
-
-    const classes = Classes.map((c) => ({
-      id: c.dataValues.id,
-      name: c.dataValues.name,
-    }));
-
     return classes;
   } catch (error) {
     logger.error(error);
@@ -70,16 +56,11 @@ export const getClasses = async (): Promise<any> => {
 
 export const getSkills = async (): Promise<any> => {
   try {
-    const Skills = await SkillMaster.findAll({
+    const skills = await SkillMaster.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name', 'type'] },
+      attributes: ['id', 'name', 'type'],
+      raw: true,
     });
-
-    const skills = Skills.map((skill) => ({
-      id: skill.dataValues.id,
-      name: skill.dataValues.name,
-      type: skill.dataValues.type,
-    }));
     return skills;
   } catch (error) {
     logger.error(error);
@@ -91,16 +72,11 @@ export const getSkills = async (): Promise<any> => {
 
 export const getSubSkills = async (): Promise<any> => {
   try {
-    const SubSkills = await SubSkillMaster.findAll({
+    const subSkills = await SubSkillMaster.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name'] },
+      attributes: ['id', 'name'],
+      raw: true,
     });
-
-    const subSkills = SubSkills.map((subSkill) => ({
-      id: subSkill.dataValues.id,
-      name: subSkill.dataValues.name,
-    }));
-
     return subSkills;
   } catch (error) {
     logger.error(error);
@@ -112,16 +88,11 @@ export const getSubSkills = async (): Promise<any> => {
 
 export const getRepository = async (): Promise<any> => {
   try {
-    const Repositories = await Repository.findAll({
+    const repositories = await Repository.findAll({
       where: { is_active: true },
-      attributes: { include: ['id', 'name'] },
+      attributes: ['id', 'name'],
+      raw: true,
     });
-
-    const repositories = Repositories.map((repo) => ({
-      id: repo.dataValues.id,
-      name: repo.dataValues.name,
-    }));
-
     return repositories;
   } catch (error) {
     logger.error(error);

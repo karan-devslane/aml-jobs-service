@@ -7,6 +7,7 @@ import { QuestionSetStage } from '../models/questionSetStage';
 import { createQuestionSet } from '../services/questionSet';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
 import { Status } from '../enums/status';
+import { getContents } from '../services/content';
 
 let Process_id: string;
 
@@ -344,12 +345,12 @@ export const stageDataToQuestionSet = async () => {
 
 const formatQuestionSetStageData = async (stageData: any[]) => {
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
-
+  const contentData = await getContents();
   const transformedData = stageData.map((obj) => {
     const transferData = {
       identifier: uuid.v4(),
       question_set_id: obj.question_set_id,
-      content_id: [obj.content_id ?? ''],
+      content_id: obj.content_id?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content)),
       instruction_text: obj.instruction_text ?? '',
       sequence: obj.sequence,
       title: { en: obj.title || obj.question_text },

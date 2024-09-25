@@ -248,11 +248,11 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]) => {
           break;
       }
     }
-    logger.info(`Question Validate::csv Data validation initiated for questions`);
-    const questionCsv = await handleQuestionCsv(validData.questions, mediaEntries, Process_id);
-    if (!questionCsv.result.isValid) {
-      logger.error('Question:: Error in question csv validation');
-      return questionCsv;
+    logger.info(`Content Validate::csv Data validation initiated for contents`);
+    const contentCsv = await handleContentCsv(validData.contents, mediaEntries, Process_id);
+    if (!contentCsv.result.isValid) {
+      logger.error('content:: Error in question csv validation');
+      return contentCsv;
     }
 
     logger.info(`Question Set Validate::csv Data validation initiated for question sets`);
@@ -262,11 +262,11 @@ const handleCSVEntries = async (csvFilesEntries: { entryName: string }[]) => {
       return questionSetCsv;
     }
 
-    logger.info(`Content Validate::csv Data validation initiated for contents`);
-    const contentCsv = await handleContentCsv(validData.contents, mediaEntries, Process_id);
-    if (!contentCsv.result.isValid) {
-      logger.error('content:: Error in question csv validation');
-      return contentCsv;
+    logger.info(`Question Validate::csv Data validation initiated for questions`);
+    const questionCsv = await handleQuestionCsv(validData.questions, mediaEntries, Process_id);
+    if (!questionCsv.result.isValid) {
+      logger.error('Question:: Error in question csv validation');
+      return questionCsv;
     }
     return { error: { errStatus: null, errMsg: null }, result: { isValid: true, data: null } };
   } catch (error) {

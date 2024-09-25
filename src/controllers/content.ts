@@ -281,7 +281,6 @@ const insertContentMain = async () => {
     logger.error(`Content Main Insert::${Process_id} staging data are invalid for main question insert`);
     return insertToMainContent;
   }
-
   logger.info(`Content Main insert:: bulk upload completed  for Process ID: ${Process_id}`);
   await ContentStage.truncate({ restartIdentity: true });
   logger.info(`Completed:: ${Process_id} Content csv uploaded successfully`);
@@ -416,7 +415,8 @@ const formatContentStageData = async (stageData: any[]) => {
       name: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: '',
-      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
+      repository: repositories,
+      // .find((repository: any) => repository.name.en === obj.repository_name)
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
@@ -424,7 +424,7 @@ const formatContentStageData = async (stageData: any[]) => {
         l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
         l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
-      sub_skills: obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
+      sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       gradient: obj.gradient,
       status: 'draft',
       media: obj.media_files,

@@ -9,6 +9,7 @@ import { appConfiguration } from '../config';
 import { createQuestion } from '../services/question';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
 import { Status } from '../enums/status';
+import { getQuestionSets } from '../services/questionSet';
 
 let mediaEntries: any[];
 let Process_id: string;
@@ -503,6 +504,8 @@ const processQuestionStage = (questionsData: any) => {
 
 const formatQuestionStageData = async (stageData: any[]) => {
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
+  const questionSetData = await getQuestionSets();
+
   const transformedData = stageData.map((obj) => {
     const {
       grid_fib_n1 = null,
@@ -519,10 +522,11 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sub_skill_xx = null,
       sub_skill_x0 = null,
     } = obj.body || {};
+    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.L1_skill) || { id: null };
     const transferData = {
       identifier: uuid.v4(),
       question_id: obj.question_id,
-      question_set_id: obj.question_set_id,
+      question_set_id: questionSetId.id,
       question_type: obj.question_type,
       operation: obj.L1_skill,
       hints: obj.hint,
@@ -535,10 +539,10 @@ const formatQuestionStageData = async (stageData: any[]) => {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
         l1_skill: skills.find((skill: any) => skill.name.en == obj.L1_skill),
-        l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l2_skill: obj.L2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.L3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
-      sub_skills: obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
+      sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       question_body: {
         numbers: [grid_fib_n1, grid_fib_n2],
         options: obj.type === 'mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
@@ -554,6 +558,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
     };
     return transferData;
   });
+
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
 };

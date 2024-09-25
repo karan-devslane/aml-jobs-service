@@ -16,3 +16,18 @@ export const createContent = async (insertData: Array<Record<string, any>>): Pro
     return { error: true, message: errorMsg };
   }
 };
+
+export const getContents = async (): Promise<any> => {
+  try {
+    const contents = await Content.findAll({
+      attributes: ['id', 'content_id'],
+      raw: true,
+    });
+    return contents;
+  } catch (error) {
+    logger.error(error);
+    const err = error instanceof Error;
+    const errorMsg = err ? error.message || 'failed to get records' : '';
+    return { error: true, message: errorMsg };
+  }
+};
