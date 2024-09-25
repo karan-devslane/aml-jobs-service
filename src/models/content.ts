@@ -27,7 +27,7 @@ export const Content = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     repository: {
       type: DataTypes.JSONB,

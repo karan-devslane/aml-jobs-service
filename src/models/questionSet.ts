@@ -32,6 +32,10 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    tenant: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
     taxonomy: {
       type: DataTypes.JSONB,
       allowNull: true,
