@@ -30,4 +30,7 @@ export interface IConfiguration {
   grid2Fields: string[];
   fibFields: string[];
   mcqFields: string[];
+  templateFileName: string;
+  templateFolder: string;
+  bulkUploadFolder: string;
 }

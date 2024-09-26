@@ -3,19 +3,19 @@ import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
+import { appConfiguration } from '../config';
+const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
-let FILENAME: string;
-let Process_id: string;
+let processId: string;
 
-export const fetchAndExtractZipEntries = async (folderName: string, process_id: string, fileName: string) => {
-  Process_id = process_id;
-  FILENAME = fileName;
+export const fetchAndExtractZipEntries = async (key: string, process_id: string, fileName?: string) => {
+  processId = process_id;
   try {
     let bulkUploadStream;
-    if (folderName === 'upload') {
-      bulkUploadStream = await getAWSFolderData(`upload/${process_id}/${fileName}`);
+    if (key === 'upload') {
+      bulkUploadStream = await getAWSFolderData(`${bulkUploadFolder}/${process_id}/${fileName}`);
     } else {
-      bulkUploadStream = await getAWSFolderData(`template/${fileName}`);
+      bulkUploadStream = await getAWSFolderData(`${templateFolder}/${templateFileName}`);
     }
     const bulkUploadBuffer = (await streamToBuffer(bulkUploadStream)) as Buffer;
     const bulkUploadZip = new AdmZip(bulkUploadBuffer);
@@ -50,7 +50,7 @@ export const streamToBuffer = (stream: any) => {
 };
 
 export const getCSVTemplateHeader = async (entryName: string) => {
-  const templateZipEntries = await fetchAndExtractZipEntries('template', Process_id, FILENAME);
+  const templateZipEntries = await fetchAndExtractZipEntries('template', processId);
   const templateFileContent = templateZipEntries.result.data
     .find((t) => t.entryName === entryName)
     ?.getData()
@@ -159,7 +159,7 @@ export const processRow = (rows: string[][], header: string[]) => {
         } else {
           acc[headerName] = cellValue;
         }
-        acc.process_id = Process_id;
+        acc.process_id = processId;
         return acc;
       },
       {} as Record<string, any>,
@@ -169,7 +169,7 @@ export const processRow = (rows: string[][], header: string[]) => {
 export const convertToCSV = async (jsonData: any, fileName: string) => {
   const json2csvParser = new Parser();
   const csv = json2csvParser.parse(jsonData);
-  const uploadMediaFile = await uploadCsvFile(csv, `upload/${Process_id}/${fileName}.csv`);
+  const uploadMediaFile = await uploadCsvFile(csv, `upload/${processId}/${fileName}.csv`);
   logger.info(`CSV:: csv file created from staging data for ${fileName}`);
   return uploadMediaFile;
 };

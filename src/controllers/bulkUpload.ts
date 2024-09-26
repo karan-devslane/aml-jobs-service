@@ -15,7 +15,7 @@ import { Status } from '../enums/status';
 import { Content } from '../models/content';
 import { QuestionSet } from '../models/questionSet';
 
-const { csvFileName, fileUploadInterval, reCheckProcessInterval } = appConfiguration;
+const { csvFileName, fileUploadInterval, reCheckProcessInterval, bulkUploadFolder } = appConfiguration;
 let fileName: string;
 let processId: string;
 let mediaEntries: any[];
@@ -39,7 +39,7 @@ export const bulkUploadProcess = async () => {
         continue;
       }
       fileName = file_name;
-      const bulkUploadMetadata = await getAWSFolderMetaData(`upload/${process_id}`);
+      const bulkUploadMetadata = await getAWSFolderMetaData(`${bulkUploadFolder}/${process_id}`);
       if (bulkUploadMetadata.error) {
         logger.error('Error: An unexpected problem arose while accessing the folder from the cloud.');
         continue;

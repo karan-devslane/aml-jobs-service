@@ -35,6 +35,9 @@ const appConfiguration: IConfiguration = {
   grid2Fields: get(envVars, 'GRID-2_FIELDS', '').split(','),
   fibFields: get(envVars, 'FIB_FIELDS', '').split(','),
   mcqFields: get(envVars, 'MCQ_FIELDS', '').split(','),
+  templateFileName: get(envVars, 'TEMPLATE_FILE_NAME', 'bulk_upload.zip'),
+  templateFolder: get(envVars, 'TEMPLATE_FOLDER', 'template'),
+  bulkUploadFolder: get(envVars, 'BULK_UPLOAD_FOLDER', 'upload'),
 };
 
 export default appConfiguration;
