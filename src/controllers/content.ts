@@ -17,7 +17,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
   mediaFileEntries = media;
   let contentsData: object[] = [];
   if (contentsCsv.length === 0) {
-    logger.error(`${processId} Content data validation resulted in empty data.`);
+    logger.error(`${processId} Content data validation returned empty data`);
     return {
       error: { errStatus: 'Empty', errMsg: 'empty content set data found' },
       result: {
@@ -30,7 +30,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
   for (const contents of contentsCsv) {
     const validatedContentHeader = await validateCSVContentHeaderRow(contents);
     if (!validatedContentHeader.result.isValid) {
-      logger.error('Content csv::error while progressing data');
+      logger.error('Error encountered during content CSV processing.');
       return validatedContentHeader;
     }
     const {
