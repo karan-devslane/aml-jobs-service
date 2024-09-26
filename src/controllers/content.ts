@@ -6,7 +6,7 @@ import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createContent } from '../services/content';
 import { ContentStage } from '../models/contentStage';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData } from '../services/util';
 import { Status } from '../enums/status';
 
 let mediaFileEntries: any[];
@@ -104,7 +104,7 @@ const validateCSVContentHeaderRow = async (contentEntry: any) => {
     },
   } = contentRowHeader;
 
-  const isValidHeader = validHeader(contentEntry.entryName, header, templateHeader.result.data);
+  const isValidHeader = validateHeader(contentEntry.entryName, header, templateHeader.result.data);
   if (!isValidHeader.result.isValid) {
     logger.error('Content Row/Header:: Header validation failed');
     return isValidHeader;
@@ -204,7 +204,7 @@ const validateStagedContentData = async () => {
 
   logger.info(`Validate Content Stage:: ${processId} , the staging Data content is valid`);
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: isValid ? null : 'errored', errMsg: isValid ? null : 'Duplicate content_id found.' },
     result: {
       isValid: isValid,
       data: null,

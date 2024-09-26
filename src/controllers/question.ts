@@ -7,7 +7,7 @@ import { createQuestionStage, getAllStageQuestion, questionStageMetaData, update
 import { QuestionStage } from '../models/questionStage';
 import { appConfiguration } from '../config';
 import { createQuestion } from '../services/question';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData } from '../services/util';
 import { Status } from '../enums/status';
 import { getQuestionSets } from '../services/questionSet';
 
@@ -106,7 +106,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
       data: { header },
     },
   } = questionRowHeader;
-  const isValidHeader = validHeader(questionEntry.entryName, header, templateHeader.result.data);
+  const isValidHeader = validateHeader(questionEntry.entryName, header, templateHeader.result.data);
   if (!isValidHeader.result.isValid) {
     logger.error('Question Row/header::Header validation failed');
     return isValidHeader;
@@ -191,6 +191,8 @@ const validateStagedQuestionData = async () => {
   }
   let isUnique = true;
   let isValid = true;
+  let errStatus = null,
+    errMsg = null;
   if (_.isEmpty(getAllQuestionStage)) {
     logger.error(`Validate Question Stage:: ${processId} ,the csv Data is invalid format or errored fields`);
     return {
@@ -221,6 +223,8 @@ const validateStagedQuestionData = async () => {
           error_info: 'Duplicate question and question_set_id combination found.',
         },
       );
+      errStatus = 'errored';
+      errMsg = `Duplicate question and question_set_id combination found.`;
       isUnique = false;
     }
     let requiredFields: string[] = [];
@@ -259,12 +263,14 @@ const validateStagedQuestionData = async () => {
           error_info: `Missing required data for type ${question_type},fields are  ${requiredFields.join(', ')}`,
         },
       );
+      errStatus = 'errored';
+      errMsg = `Missing required data for type ${question_type},fields are  ${requiredFields.join(', ')}`;
       isValid = false;
     }
   }
   logger.info(`Validate Question Stage::${processId} , everything in the Question stage Data valid.`);
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: errStatus, errMsg: errMsg },
     result: {
       isValid: isUnique && isValid,
     },

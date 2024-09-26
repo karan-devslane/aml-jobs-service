@@ -5,7 +5,7 @@ import { updateProcess } from '../services/process';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
 import { QuestionSetStage } from '../models/questionSetStage';
 import { createQuestionSet } from '../services/questionSet';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData } from '../services/util';
 import { Status } from '../enums/status';
 import { getContents } from '../services/content';
 
@@ -107,7 +107,7 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
       data: { header },
     },
   } = questionSetRowHeader;
-  const isValidHeader = validHeader(questionSetEntry.entryName, header, templateHeader.result.data);
+  const isValidHeader = validateHeader(questionSetEntry.entryName, header, templateHeader.result.data);
   if (!isValidHeader.result.isValid) {
     logger.error('Question Set Row/header:: Header validation failed');
     return isValidHeader;
@@ -217,7 +217,7 @@ const validateQuestionSetsStage = async () => {
   }
   logger.info(`Validate Question set Stage:: ${processId} , the staging Data question set is valid`);
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: isValid ? null : 'errored', errMsg: isValid ? null : 'Duplicate question_set_id found.' },
     result: {
       isValid: isValid,
       data: null,

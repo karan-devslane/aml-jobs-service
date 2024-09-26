@@ -84,16 +84,18 @@ export const getCSVHeaderAndRow = (csvEntries: any) => {
     .map((row: string) => row.split(','))
     .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
   logger.info('Row/Header:: header and rows are extracted');
+  const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
+  const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
   return {
     error: { errStatus: null, errMsg: null },
     result: {
       isValid: true,
-      data: { header, rows },
+      data: { header: cleanHeader, rows: cleanRows },
     },
   };
 };
 
-export const validHeader = (entryName: string, header: any, templateHeader: any) => {
+export const validateHeader = (entryName: string, header: any, templateHeader: any) => {
   if (header.length !== templateHeader.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return {
