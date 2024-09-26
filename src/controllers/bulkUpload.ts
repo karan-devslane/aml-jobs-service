@@ -229,7 +229,7 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
       contents: [] as object[],
     };
     for (const csvFile of csvFiles) {
-      const fileNameKey = csvFile?.entryName.split('_')[1];
+      const fileNameKey = csvFile?.entryName.split('-')[1];
       switch (fileNameKey) {
         case 'question.csv':
           validCSVData.questions.push(csvFile);
