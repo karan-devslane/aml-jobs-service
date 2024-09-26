@@ -24,27 +24,27 @@ export const bulkUploadProcess = async () => {
   await handleFailedProcess();
   const processesInfo = await getProcessMetaData({ status: 'open' });
   if (processesInfo.error) {
-    logger.error('Error: An unexpected issue occurred while retrieving the open process.');
+    logger.error('Error retrieving open processes.');
     return false;
   }
   const { getAllProcess } = processesInfo;
   try {
     for (const process of getAllProcess) {
       const { process_id, file_name, created_at } = process;
-      logger.info(`initiate:: bulk upload job for process id :${process_id}.`);
+      logger.info(`Starting bulk upload job for process ID: ${process_id}.`);
       processId = process_id;
       const IsStaleProcess = await markStaleProcessesAsErrored(created_at);
       if (IsStaleProcess.result.isStale) {
-        logger.info(`Stale:: Process ${processId} is stale, skipping.`);
+        logger.error(`Process ID ${processId} is stale, skipping.`);
         continue;
       }
       fileName = file_name;
       const bulkUploadMetadata = await getAWSFolderMetaData(`${bulkUploadFolder}/${process_id}`);
       if (bulkUploadMetadata.error) {
-        logger.error('Error: An unexpected problem arose while accessing the folder from the cloud.');
+        logger.error(`Error accessing cloud folder for process ID: ${process_id}.`);
         continue;
       }
-      logger.info(`initiate:: bulk upload folder validation for process id :${process_id}.`);
+      logger.info(`Validating bulk upload folder for process ID: ${process_id}.`);
       const zipValidation = await validateZipFile(bulkUploadMetadata.Contents);
       const {
         result: { isValidZip },
@@ -56,7 +56,7 @@ export const bulkUploadProcess = async () => {
           status: Status.FAILED,
         });
         if (processUpdate.error) {
-          logger.error(`Error while updating the process id ${processId} terminating whole process job`);
+          logger.error(`Error updating process ID ${processId}, terminating job.`);
           return false;
         }
         continue;
@@ -69,7 +69,7 @@ export const bulkUploadProcess = async () => {
           status: Status.FAILED,
         });
         if (processUpdate.error) {
-          logger.error(`Error while updating the process id ${processId} terminating whole process job`);
+          logger.error(`Error updating process ID ${processId}, terminating job.`);
           return false;
         }
         continue;
@@ -82,13 +82,13 @@ export const bulkUploadProcess = async () => {
           status: Status.FAILED,
         });
         if (processUpdate.error) {
-          logger.error(`Error while updating the process id ${processId} terminating whole process job`);
+          logger.error(`Error updating process ID ${processId}, terminating job.`);
           return false;
         }
         continue;
       }
       await updateProcess(processId, { status: Status.COMPLETED });
-      logger.info(`Completed:: ${processId} process validation for bulk upload question ,question set and content successfully inserted`);
+      logger.info(`Process ID ${processId}: Bulk upload validation and insertion of questions, question sets, and content completed successfully.`);
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Error during upload validation.Re upload file for new process';
