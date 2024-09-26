@@ -96,7 +96,7 @@ const validateCSVContentHeaderRow = async (contentEntry: any) => {
   }
   const contentRowHeader = getCSVHeaderAndRow(contentEntry);
   if (!contentRowHeader.result.isValid) {
-    logger.error('Content Row/Header:: Template header, header, or rows are missing');
+    logger.error('Content Row/Header::content header, or rows are missing');
     return contentRowHeader;
   }
 
@@ -356,7 +356,7 @@ export const migrateToMainContent = async () => {
     };
   }
   const insertData = await formatStagedContentData(getAllContentStage);
-  if (!insertData) {
+  if (insertData.length === 0) {
     return {
       error: { errStatus: 'process_stage_data', errMsg: 'Error in formatting staging data to main table.' },
       result: {

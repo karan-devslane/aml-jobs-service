@@ -13,6 +13,10 @@ export const Content = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    process_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
     content_id: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -35,7 +39,7 @@ export const Content = AppDataSource.define(
     },
     taxonomy: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     sub_skills: {
       type: DataTypes.JSONB,

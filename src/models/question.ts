@@ -26,7 +26,7 @@ export const Question = AppDataSource.define(
       allowNull: false,
     },
     question_type: {
-      type: DataTypes.ENUM('Grid-1', 'mcq', 'fib', 'Grid-2'),
+      type: DataTypes.ENUM('Grid-1', 'Mcq', 'Fib', 'Grid-2'),
       allowNull: false,
     },
     operation: {
@@ -43,7 +43,7 @@ export const Question = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     repository: {
       type: DataTypes.JSONB,
@@ -67,7 +67,7 @@ export const Question = AppDataSource.define(
     },
     media: {
       type: DataTypes.ARRAY(DataTypes.JSONB),
-      allowNull: false,
+      allowNull: true,
     },
     question_body: {
       type: DataTypes.JSONB,

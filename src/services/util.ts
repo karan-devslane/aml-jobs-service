@@ -100,7 +100,7 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
   if (header.length !== templateHeader.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return {
-      error: { errStatus: null, errMsg: null },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not matched with header length.` },
       result: {
         isValid: false,
         data: null,
@@ -112,7 +112,7 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
   if (!validHeader) {
     logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
     return {
-      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the expected CSV format.` },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column name ` },
       result: {
         isValid: false,
         data: null,
@@ -149,20 +149,21 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['question_id'] = cellValue;
         } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
           acc[headerName] = Number(cellValue);
-        } else if (headerName.includes('sub_skill_x+x')) {
+        } else if (headerName.includes('x+x')) {
           acc['sub_skill_xx'] = cellValue;
-        } else if (headerName.includes('sub_skill_x+0')) {
+        } else if (headerName.includes('x+0')) {
           acc['sub_skill_x0'] = cellValue;
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
         } else if (headerName.includes('instruction_media')) {
           acc['instruction_media'] = cellValue;
         } else if (headerName.includes('instruction_text')) {
-          acc['instruction_media'] = cellValue;
+          acc['instruction_text'] = cellValue;
         } else {
           acc[headerName] = cellValue;
         }
         acc.process_id = processId;
+        acc.created_by = 'system';
         return acc;
       },
       {} as Record<string, any>,

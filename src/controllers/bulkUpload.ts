@@ -179,7 +179,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
       result: { isValidZip: false, data: null },
     };
   }
-  await updateProcess(processId, { status: Status.PROGRESS, updated_by: 1 });
+  await updateProcess(processId, { status: Status.PROGRESS, updated_by: 'system' });
   logger.info(`Zip Format:: ${processId} having valid zip file.`);
   return { error: { errStatus: null, errMsg: null }, result: { isValidZip: true, data: null } };
 };

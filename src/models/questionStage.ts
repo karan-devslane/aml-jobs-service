@@ -30,7 +30,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     question_type: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM('Grid-1', 'Mcq', 'Fib', 'Grid-2'),
       allowNull: false,
     },
     repository_name: {
@@ -50,12 +50,12 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     L2_skill: {
-      type: DataTypes.ARRAY(DataTypes.ENUM('1Digits', '2Digits', '3Digits', '4Digits')),
+      type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false,
     },
     L3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: false,
+      allowNull: true,
     },
     gradient: {
       type: DataTypes.STRING,

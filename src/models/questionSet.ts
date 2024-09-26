@@ -35,7 +35,7 @@ export const QuestionSet = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     taxonomy: {
       type: DataTypes.JSONB,
@@ -52,7 +52,7 @@ export const QuestionSet = AppDataSource.define(
     is_atomic: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true,
+      defaultValue: false,
     },
     gradient: {
       type: DataTypes.STRING,
