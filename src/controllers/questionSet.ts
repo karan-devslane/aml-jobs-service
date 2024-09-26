@@ -327,10 +327,11 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
   const contentData = await getContents();
   const transformedData = stageData.map((obj) => {
+    const contentId = obj.content_id?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content));
     const transferData = {
       identifier: uuid.v4(),
       question_set_id: obj.question_set_id,
-      content_id: obj.content_id?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content)),
+      content_id: contentId.id ?? null,
       instruction_text: obj.instruction_text ?? '',
       sequence: obj.sequence,
       title: { en: obj.title || obj.question_text },
