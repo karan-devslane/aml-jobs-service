@@ -333,7 +333,7 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
       title: { en: obj.title || obj.question_text },
       description: { en: obj.description },
       tenant: '',
-      repository: repositories.find((repository: any) => repository.name === obj.repository_name),
+      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),

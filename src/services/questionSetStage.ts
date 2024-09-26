@@ -14,6 +14,7 @@ export const createQuestionSetStage = async (insertData: Array<Record<string, an
     logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to create record' : '';
+    logger.error(errorMsg);
     return { error: true, message: errorMsg };
   }
 };

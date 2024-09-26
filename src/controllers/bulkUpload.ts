@@ -14,6 +14,9 @@ import { handleContentCsv, migrateToMainContent } from './content';
 import { Status } from '../enums/status';
 import { Content } from '../models/content';
 import { QuestionSet } from '../models/questionSet';
+import { ContentStage } from '../models/contentStage';
+import { QuestionSetStage } from '../models/questionSetStage';
+import { QuestionStage } from '../models/questionStage';
 
 const { csvFileName, fileUploadInterval, reCheckProcessInterval, bulkUploadFolder } = appConfiguration;
 let fileName: string;
@@ -252,6 +255,7 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     const contentsCsv = await handleContentCsv(validCSVData.contents, mediaEntries, processId);
     if (!contentsCsv.result.isValid) {
       logger.error('content:: Error in question csv validation');
+      await ContentStage.destroy({ where: { process_id: processId } });
       return contentsCsv;
     }
 
@@ -259,6 +263,8 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     const questionSetsCsv = await handleQuestionSetCsv(validCSVData.questionSets, processId);
     if (!questionSetsCsv) {
       logger.error('Question set:: Error in question set csv validation');
+      await ContentStage.destroy({ where: { process_id: processId } });
+      await QuestionSetStage.destroy({ where: { process_id: processId } });
       await Content.destroy({ where: { process_id: processId } });
       return questionSetsCsv;
     }
@@ -267,6 +273,9 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     const questionsCsv = await handleQuestionCsv(validCSVData.questions, mediaEntries, processId);
     if (!questionsCsv.result.isValid) {
       logger.error('Question:: Error in question csv validation');
+      await ContentStage.destroy({ where: { process_id: processId } });
+      await QuestionSetStage.destroy({ where: { process_id: processId } });
+      await QuestionStage.destroy({ where: { process_id: processId } });
       await Content.destroy({ where: { process_id: processId } });
       await QuestionSet.destroy({ where: { process_id: processId } });
       return questionsCsv;

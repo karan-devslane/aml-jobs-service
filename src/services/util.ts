@@ -66,12 +66,13 @@ export const getCSVTemplateHeader = async (entryName: string) => {
     };
   }
   const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
+  const cleanHeader = templateHeader.map((cell: string) => cell.replace(/\r/g, '').trim());
   logger.info('Template:: template header extracted.');
   return {
     error: { errStatus: null, errMsg: null },
     result: {
       isValid: true,
-      data: templateHeader,
+      data: cleanHeader,
     },
   };
 };
@@ -155,9 +156,9 @@ export const processRow = (rows: string[][], header: string[]) => {
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
         } else if (headerName.includes('instruction_media')) {
-          acc['is_atomic'] = cellValue;
+          acc['instruction_media'] = cellValue;
         } else if (headerName.includes('instruction_text')) {
-          acc['is_atomic'] = cellValue;
+          acc['instruction_media'] = cellValue;
         } else {
           acc[headerName] = cellValue;
         }
