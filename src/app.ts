@@ -1,4 +1,4 @@
-import { appConfiguration, AppDataSource } from './config';
+import { appConfiguration } from './config';
 import logger from './utils/logger';
 import { bulkUploadProcess } from './controllers/bulkUpload';
 let isJobRunning = false;
@@ -35,20 +35,13 @@ const processJob = async (): Promise<void> => {
 };
 
 const initializeJobScheduler = (): void => {
-  AppDataSource.sync()
-    .then(() => {
-      logger.info('Database connected');
-      setInterval(() => {
-        void processJob();
-      }, processInterval);
+  logger.info('Database connected');
+  setInterval(() => {
+    void processJob();
+  }, processInterval);
 
-      process.on('uncaughtException', unexpectedErrorHandler);
-      process.on('unhandledRejection', unexpectedErrorHandler);
-    })
-    .catch((error: any) => {
-      logger.error('Failed to start job scheduler', { message: error.message });
-      process.exit(1);
-    });
+  process.on('uncaughtException', unexpectedErrorHandler);
+  process.on('unhandledRejection', unexpectedErrorHandler);
 };
 
 initializeJobScheduler();
