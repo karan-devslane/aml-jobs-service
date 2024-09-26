@@ -76,6 +76,8 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
     return validateQuestions;
   }
 
+  await updateProcess(processId, { status: Status.VALIDATED });
+
   const questionsMedia = await processQuestionMediaFiles();
   if (!questionsMedia.result.isValid) {
     logger.error('Error while validating stage question table');
@@ -304,7 +306,7 @@ const uploadErroredQuestionsToCloud = async () => {
   logger.info('Question Upload Cloud::All the question are validated and uploaded in the cloud for reference');
   logger.info(`Question Media upload:: ${processId} question Stage data is ready for upload media `);
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: 'validation_errored', errMsg: 'question file validation errored' },
     result: {
       isValid: true,
       data: null,

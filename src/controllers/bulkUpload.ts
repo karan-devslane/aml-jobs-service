@@ -181,7 +181,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
   }
   await updateProcess(processId, { status: Status.PROGRESS, updated_by: 1 });
   logger.info(`Zip Format:: ${processId} having valid zip file.`);
-  return { error: null, result: { isValidZip: true, data: null } };
+  return { error: { errStatus: null, errMsg: null }, result: { isValidZip: true, data: null } };
 };
 
 const validateCSVFilesFormatInZip = async () => {

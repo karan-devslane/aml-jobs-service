@@ -5,4 +5,5 @@ export enum Status {
   ERROR = 'errored',
   COMPLETED = 'completed',
   REOPEN = 'reopen',
+  VALIDATED = 'validated',
 }

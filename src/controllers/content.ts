@@ -71,6 +71,8 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
     return validateContents;
   }
 
+  await updateProcess(processId, { status: Status.VALIDATED });
+
   const contentsMedia = await processContentMediaFiles();
   if (!contentsMedia.result.isValid) {
     logger.error('Error while validating stage content media');
@@ -239,7 +241,7 @@ const uploadErroredContentsToCloud = async () => {
   logger.info('Content csv upload:: all the data are validated successfully and uploaded to cloud for reference');
   logger.info(`Content Media upload:: ${processId} content Stage data is ready for upload media to cloud`);
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: 'validation_errored', errMsg: 'content file validation errored' },
     result: {
       isValid: true,
       data: null,

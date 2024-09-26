@@ -75,6 +75,9 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
     if (!uploadQuestionSets.result.isValid) return uploadQuestionSets;
     return validateQuestionSets;
   }
+
+  await updateProcess(processId, { status: Status.VALIDATED });
+
   const insertedQuestionSets = await insertMainQuestionSets();
   return insertedQuestionSets;
 };
@@ -251,7 +254,7 @@ const uploadErroredQuestionSetsToCloud = async () => {
   }
   logger.info('Question set:: all the data are validated successfully and uploaded to cloud for reference');
   return {
-    error: { errStatus: null, errMsg: null },
+    error: { errStatus: 'validation_errored', errMsg: 'question set file validation errored' },
     result: {
       isValid: true,
       data: null,
