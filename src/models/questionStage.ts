@@ -19,7 +19,7 @@ export const QuestionStage = AppDataSource.define(
     },
     question_id: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     question_set_id: {
       type: DataTypes.STRING,
@@ -27,35 +27,35 @@ export const QuestionStage = AppDataSource.define(
     },
     sequence: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     question_type: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     repository_name: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     board: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     class: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     L1_skill: {
-      type: DataTypes.STRING,
-      allowNull: true,
+      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+      allowNull: false,
     },
     L2_skill: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      type: DataTypes.ARRAY(DataTypes.ENUM('1Digits', '2Digits', '3Digits', '4Digits')),
+      allowNull: false,
     },
     L3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      allowNull: false,
     },
     gradient: {
       type: DataTypes.STRING,
@@ -71,11 +71,11 @@ export const QuestionStage = AppDataSource.define(
     },
     body: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     benchmark_time: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     sub_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
@@ -99,7 +99,7 @@ export const QuestionStage = AppDataSource.define(
     },
     media_files: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     status: {
       type: DataTypes.ENUM('progress', 'errored', 'success'),
@@ -107,6 +107,14 @@ export const QuestionStage = AppDataSource.define(
     },
     error_info: {
       type: DataTypes.JSON,
+      allowNull: true,
+    },
+    created_by: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },

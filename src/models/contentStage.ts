@@ -11,15 +11,15 @@ export const ContentStage = AppDataSource.define(
     },
     process_id: {
       type: DataTypes.UUID,
-      allowNull: true,
+      allowNull: false,
     },
     content_id: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     title: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     description: {
       type: DataTypes.STRING,
@@ -27,27 +27,27 @@ export const ContentStage = AppDataSource.define(
     },
     repository_name: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     board: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     class: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     L1_skill: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     L2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      allowNull: false,
     },
     L3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      allowNull: false,
     },
     sub_skills: {
       type: DataTypes.ARRAY(DataTypes.STRING),
@@ -59,7 +59,7 @@ export const ContentStage = AppDataSource.define(
     },
     media_files: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     status: {
       type: DataTypes.ENUM('progress', 'errored', 'success'),
@@ -67,6 +67,14 @@ export const ContentStage = AppDataSource.define(
     },
     error_info: {
       type: DataTypes.JSON,
+      allowNull: true,
+    },
+    created_by: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },

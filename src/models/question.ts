@@ -15,7 +15,7 @@ export const Question = AppDataSource.define(
     },
     question_id: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     question_set_id: {
       type: DataTypes.STRING,
@@ -23,15 +23,15 @@ export const Question = AppDataSource.define(
     },
     benchmark_time: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     question_type: {
       type: DataTypes.ENUM('Grid-1', 'mcq', 'fib', 'Grid-2'),
       allowNull: false,
     },
     operation: {
-      type: DataTypes.ENUM('add', 'sub', 'multiple', 'division'),
-      allowNull: true,
+      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+      allowNull: false,
     },
     name: {
       type: DataTypes.JSONB,
@@ -43,15 +43,15 @@ export const Question = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     repository: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     taxonomy: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     gradient: {
       type: DataTypes.STRING,
@@ -67,15 +67,15 @@ export const Question = AppDataSource.define(
     },
     media: {
       type: DataTypes.ARRAY(DataTypes.JSONB),
-      allowNull: true,
+      allowNull: false,
     },
     question_body: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     created_by: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     updated_by: {
       type: DataTypes.STRING,

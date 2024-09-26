@@ -15,11 +15,11 @@ export const QuestionSetStage = AppDataSource.define(
     },
     question_set_id: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     title: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     description: {
       type: DataTypes.STRING,
@@ -27,31 +27,31 @@ export const QuestionSetStage = AppDataSource.define(
     },
     repository_name: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     board: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     class: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     L1_skill: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     L2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      allowNull: false,
     },
     L3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
-      allowNull: true,
+      allowNull: false,
     },
     sequence: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
     },
     sub_skills: {
       type: DataTypes.ARRAY(DataTypes.STRING),
@@ -83,14 +83,22 @@ export const QuestionSetStage = AppDataSource.define(
     },
     status: {
       type: DataTypes.ENUM('progress', 'errored', 'success'),
-      allowNull: true,
+      allowNull: false,
     },
     media: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     error_info: {
       type: DataTypes.JSON,
+      allowNull: true,
+    },
+    created_by: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    updated_by: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },
