@@ -328,6 +328,7 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
   const contentData = await getContents();
   const transformedData = stageData.map((obj) => {
     const contentId = obj.instruction_media?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content));
+    const SubSkills = obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)).filter((sub: any) => sub);
     const transferData = {
       identifier: uuid.v4(),
       question_set_id: obj.question_set_id,
@@ -345,13 +346,14 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
         l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
         l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
-      sub_skills: obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
+      sub_skills: SubSkills ?? null,
       purpose: obj.purpose,
       is_atomic: obj.is_atomic,
       gradient: obj.gradient,
       group_name: obj.group_name,
       status: 'draft',
-      created_by: 1,
+      process_id: obj.process_id,
+      created_by: 'system',
       is_active: true,
     };
     return transferData;

@@ -42,7 +42,7 @@ export const QuestionSet = AppDataSource.define(
       allowNull: false,
     },
     sub_skills: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     purpose: {

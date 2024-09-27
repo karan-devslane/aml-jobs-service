@@ -38,6 +38,11 @@ export const bulkUploadProcess = async () => {
       processId = process_id;
       const IsStaleProcess = await markStaleProcessesAsErrored(created_at);
       if (IsStaleProcess.result.isStale) {
+        await updateProcess(processId, {
+          error_status: 'errored',
+          error_message: 'Is Stale process',
+          status: Status.FAILED,
+        });
         logger.error(`Process ID ${processId} is stale, skipping.`);
         continue;
       }
@@ -171,6 +176,12 @@ const checkStagingProcess = async () => {
 };
 
 const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
+  if (_.isEmpty(bulkUploadMetadata)) {
+    return {
+      error: { errStatus: 'empty', errMsg: 'No zip file found' },
+      result: { isValidZip: false, data: null },
+    };
+  }
   const fileExt = path.extname(bulkUploadMetadata[0].Key || '').toLowerCase();
   if (fileExt !== '.zip') {
     logger.error(`Zip Format:: ${processId} Unsupported file format, please upload a ZIP file.`);

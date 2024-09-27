@@ -30,7 +30,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     question_type: {
-      type: DataTypes.ENUM('Grid-1', 'Mcq', 'Fib', 'Grid-2'),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     repository_name: {
@@ -46,7 +46,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     L1_skill: {
-      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     L2_skill: {
@@ -78,7 +78,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     sub_skill: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     sub_skill_carry: {
@@ -89,11 +89,11 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
-    sub_skill_x0: {
+    sub_skill_x_plus_0: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
-    sub_skill_xx: {
+    sub_skill_x_plus_x: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },

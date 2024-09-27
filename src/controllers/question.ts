@@ -247,10 +247,10 @@ const validateStagedQuestionData = async () => {
       case `Grid-2`:
         requiredFields = grid2Fields;
         break;
-      case `mcq`:
+      case `Mcq`:
         requiredFields = mcqFields;
         break;
-      case `fib`:
+      case `Fib`:
         requiredFields = fibFields;
         break;
       default:
@@ -459,13 +459,13 @@ export const migrateToMainQuestion = async () => {
 
 const processQuestionStage = (questionsData: any) => {
   const fieldMapping: any = {
-    'Grid-1_add': [...grid1AddFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
-    'Grid-1_sub': [...grid1SubFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
-    'Grid-1_multiple': [...grid1MultipleFields, 'grid1_multiply_intermediate_steps_prefills', 'grid1_pre_fills_result'],
-    'Grid-1_division': [...grid1DivFields, 'grid1_pre_fills_remainder', 'grid1_pre_fills_quotient', 'grid1_div_intermediate_steps_prefills'],
+    'Grid-1_Addition': [...grid1AddFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
+    'Grid-1_Subtraction': [...grid1SubFields, 'grid1_pre_fills_top', 'grid1_pre_fills_result'],
+    'Grid-1_Multiplication': [...grid1MultipleFields, 'grid1_multiply_intermediate_steps_prefills', 'grid1_pre_fills_result'],
+    'Grid-1_Division': [...grid1DivFields, 'grid1_pre_fills_remainder', 'grid1_pre_fills_quotient', 'grid1_div_intermediate_steps_prefills'],
     'Grid-2': [...grid2Fields, 'grid2_pre_fills_n1', 'grid2_pre_fills_n2'],
-    mcq: mcqFields,
-    fib: fibFields,
+    Mcq: mcqFields,
+    Fib: fibFields,
   };
   questionsData.forEach((question: any) => {
     const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.L1_skill}` : question.question_type;
@@ -524,15 +524,16 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       question_body: {
         numbers: [grid_fib_n1, grid_fib_n2],
-        options: obj.type === 'mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
-        correct_option: obj.type === 'mcq' ? mcq_correct_options : undefined,
+        options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+        correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
         answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2, obj.question_type),
         wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
       },
       benchmark_time: obj.benchmark_time,
       status: 'draft',
       media: obj.media_files,
-      created_by: 1,
+      process_id: obj.process_id,
+      created_by: 'system',
       is_active: true,
     };
     return transferData;
@@ -544,14 +545,14 @@ const formatQuestionStageData = async (stageData: any[]) => {
 
 const getAnswer = (skill: string, num1: string, num2: string, type: string) => {
   switch (skill) {
-    case 'multiple':
+    case 'Multiplication':
       return multiplyWithSteps(num1, num2, type);
-    case 'division':
+    case 'Division':
       return divideWithSteps(Number(num2), Number(num1), type);
-    case 'add':
+    case 'Addition':
       logger.info('Add:: got a value for addition  numbers');
       return Number(num1) + Number(num2);
-    case 'sub':
+    case 'Subtraction':
       logger.info('sub:: got a value for subtraction  numbers');
       return Number(num1) - Number(num2);
     default:

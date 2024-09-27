@@ -407,7 +407,8 @@ const formatStagedContentData = async (stageData: any[]) => {
       gradient: obj.gradient,
       status: 'draft',
       media: obj.media_files,
-      created_by: 1,
+      process_id: obj.process_id,
+      created_by: 'system',
       is_active: true,
     };
     return transferData;

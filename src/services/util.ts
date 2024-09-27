@@ -156,7 +156,7 @@ export const processRow = (rows: string[][], header: string[]) => {
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
         } else if (headerName.includes('instruction_media')) {
-          acc['instruction_media'] = cellValue;
+          acc['instruction_media'] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName.includes('instruction_text')) {
           acc['instruction_text'] = cellValue;
         } else {
