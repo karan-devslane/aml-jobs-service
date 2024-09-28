@@ -37,15 +37,15 @@ export const QuestionSetStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L1_skill: {
+    l1_skill: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L2_skill: {
+    l2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false,
     },
-    L3_skill: {
+    l3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
@@ -63,7 +63,8 @@ export const QuestionSetStage = AppDataSource.define(
     },
     is_atomic: {
       type: DataTypes.BOOLEAN,
-      allowNull: true,
+      allowNull: false,
+      defaultValue: false,
     },
     gradient: {
       type: DataTypes.STRING,

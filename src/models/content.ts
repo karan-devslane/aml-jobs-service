@@ -27,7 +27,7 @@ export const Content = AppDataSource.define(
     },
     description: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     tenant: {
       type: DataTypes.JSONB,
@@ -51,11 +51,11 @@ export const Content = AppDataSource.define(
     },
     status: {
       type: DataTypes.ENUM('draft', 'live'),
-      allowNull: true,
+      allowNull: false,
     },
     media: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
     },
     created_by: {
       type: DataTypes.STRING,
@@ -68,6 +68,7 @@ export const Content = AppDataSource.define(
     is_active: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
+      defaultValue: true,
     },
   },
   {

@@ -37,15 +37,15 @@ export const ContentStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L1_skill: {
-      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+    l1_skill: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    L2_skill: {
+    l2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false,
     },
-    L3_skill: {
+    l3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },

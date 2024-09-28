@@ -1,9 +1,12 @@
 import logger from '../utils/logger';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
+import _ from 'lodash';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
 import { appConfiguration } from '../config';
+import { Board, Class, Skill, SubSkill, UniqueValues, Mismatches } from '../types/util';
+
 const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
 let processId: string;
@@ -138,7 +141,7 @@ export const processRow = (rows: string[][], header: string[]) => {
         if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
           acc.body = acc.body || {};
           acc.body[headerName] = cellValue;
-        } else if (headerName.includes('L2_skill') || headerName.includes('L3_skill') || headerName.includes('sub_skill')) {
+        } else if (headerName.includes('l2_skill') || headerName.includes('l3_skill') || headerName.includes('sub_skill')) {
           acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName.includes('media')) {
           acc.media_files = acc.media_files || [];
@@ -170,6 +173,145 @@ export const processRow = (rows: string[][], header: string[]) => {
     ),
   );
 };
+
+// export const getUniqueValues = (data: any) => {
+//   const keys = ['l1_skill', 'l2_skill', 'l3_skill', 'board', 'class', 'sub_skills'];
+
+//   return _.reduce(
+//     keys,
+//     (acc, key) => {
+//       if (key === 'l2_skill' || key === '13_skill' || key === 'sub_skills') {
+//         acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
+//       } else {
+//         acc[key] = _.uniqBy(data, key)
+//           .map((item) => item[key])
+//           .filter((value) => value !== undefined);
+//       }
+//       return acc;
+//     },
+//     {},
+//   );
+// };
+
+// export const checkValidity = async (data: any) => {
+//   const uniqueValues: any = getUniqueValues(data);
+//   const { boards, classes, skills, subSkills, repositories } = await preloadData();
+
+//   const mismatches = {
+//     boards: _.difference(
+//       uniqueValues.board,
+//       boards.flatMap((board) => board.name.en),
+//     ),
+//     classes: _.difference(
+//       uniqueValues.class,
+//       classes.flatMap((Class) => Class.name.en),
+//     ),
+//     repository: _.difference(
+//       uniqueValues.repository,
+//       repositories.flatMap((repo) => repo.name.en),
+//     ),
+//     l1_skill: _.difference(
+//       uniqueValues.l1_skill,
+//       skills.filter((skill) => skill.type === 'l1_skill').map((skill) => skill.name.en),
+//     ),
+//     l2_skill: _.difference(
+//       uniqueValues.l2_skill,
+//       skills.filter((skill) => skill.type === 'l2_skill').map((skill) => skill.name.en),
+//     ),
+//     l3_skill: _.difference(
+//       _.flatMap(uniqueValues.l3_skill),
+//       skills.filter((skill) => skill.type === 'l3_skill').map((skill) => skill.name.en),
+//     ),
+//     sub_skills: _.difference(
+//       uniqueValues.sub_skills,
+//       subSkills.flatMap((Sub_skill) => Sub_skill.name.en),
+//     ),
+//   };
+
+//   const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
+
+//   if (hasMismatch) {
+//     return {
+//       error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
+//       result: { isValid: false, data: null },
+//     };
+//   }
+
+//   return {
+//     error: { errStatus: null, errMsg: null },
+//     result: { isValid: true, data: uniqueValues },
+//   };
+// };
+
+export const getUniqueValues = (data: any[]): UniqueValues => {
+  const keys = ['l1_skill', 'l2_skill', 'l3_skill', 'board', 'class', 'sub_skills'];
+
+  return _.reduce(
+    keys,
+    (acc: Partial<UniqueValues>, key) => {
+      if (key === 'l2_skill' || key === 'l3_skill' || key === 'sub_skills') {
+        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
+      } else {
+        acc[key] = _.uniqBy(data, key)
+          .map((item) => item[key])
+          .filter((value) => value !== undefined);
+      }
+      return acc;
+    },
+    {},
+  ) as UniqueValues;
+};
+
+export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: UniqueValues | null } }> => {
+  const uniqueValues: UniqueValues = getUniqueValues(data);
+  const { boards, classes, skills, subSkills, repositories } = await preloadData();
+
+  const mismatches: Mismatches = {
+    boards: _.difference(
+      uniqueValues.board,
+      boards.flatMap((board: Board) => board.name.en),
+    ),
+    classes: _.difference(
+      uniqueValues.class,
+      classes.flatMap((Class: Class) => Class.name.en),
+    ),
+    repository: _.difference(
+      uniqueValues.repository || [],
+      repositories.flatMap((repo: Board) => repo.name.en),
+    ),
+    l1_skill: _.difference(
+      uniqueValues.l1_skill,
+      skills.filter((skill: Skill) => skill.type === 'l1_skill').map((skill: Skill) => skill.name.en),
+    ),
+    l2_skill: _.difference(
+      uniqueValues.l2_skill,
+      skills.filter((skill: Skill) => skill.type === 'l2_skill').map((skill: Skill) => skill.name.en),
+    ),
+    l3_skill: _.difference(
+      _.flatMap(uniqueValues.l3_skill),
+      skills.filter((skill: Skill) => skill.type === 'l3_skill').map((skill: Skill) => skill.name.en),
+    ),
+    sub_skills: _.difference(
+      uniqueValues.sub_skills,
+      subSkills.flatMap((Sub_skill: SubSkill) => Sub_skill.name.en),
+    ),
+  };
+
+  const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
+
+  if (hasMismatch) {
+    return {
+      error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
+      result: { isValid: false, data: null },
+    };
+  }
+
+  return {
+    error: { errStatus: null, errMsg: null },
+    result: { isValid: true, data: uniqueValues },
+  };
+};
+
 export const convertToCSV = async (jsonData: any, fileName: string) => {
   const json2csvParser = new Parser();
   const csv = json2csvParser.parse(jsonData);

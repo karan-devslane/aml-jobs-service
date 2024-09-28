@@ -5,7 +5,7 @@ import { updateProcess } from '../services/process';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
 import { QuestionSetStage } from '../models/questionSetStage';
 import { createQuestionSet } from '../services/questionSet';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 import { getContents } from '../services/content';
 
@@ -172,6 +172,8 @@ const bulkInsertQuestionSetStage = async (insertData: object[]) => {
 
 const validateQuestionSetsStage = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
+  const validateMetadata = await checkValidity(getAllQuestionSetStage);
+  if (!validateMetadata.result.isValid) return validateMetadata;
   if (getAllQuestionSetStage.error) {
     logger.error(`Validate Question Set Stage:: ${processId} unexpected error  .`);
     return {

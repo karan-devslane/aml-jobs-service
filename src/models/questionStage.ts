@@ -45,15 +45,15 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L1_skill: {
+    l1_skill: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L2_skill: {
+    l2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false,
     },
-    L3_skill: {
+    l3_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
@@ -78,7 +78,7 @@ export const QuestionStage = AppDataSource.define(
       allowNull: false,
     },
     sub_skill: {
-      type: DataTypes.JSONB,
+      type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
     sub_skill_carry: {

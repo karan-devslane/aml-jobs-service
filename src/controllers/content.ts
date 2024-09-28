@@ -6,7 +6,7 @@ import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createContent } from '../services/content';
 import { ContentStage } from '../models/contentStage';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 
 let mediaFileEntries: any[];
@@ -168,6 +168,8 @@ const bulkInsertContentStage = async (insertData: object[]) => {
 
 const validateStagedContentData = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: processId });
+  const validateMetadata = await checkValidity(getAllContentStage);
+  if (!validateMetadata.result.isValid) return validateMetadata;
   let isValid = true;
   if (getAllContentStage.error) {
     logger.error(`Validate Content Stage:: ${processId} ,the csv Data is invalid format or errored fields`);
