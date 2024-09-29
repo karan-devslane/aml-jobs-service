@@ -138,6 +138,12 @@ export const processRow = (rows: string[][], header: string[]) => {
       (acc, cell, index) => {
         const headerName = header[index].replace(/\r/g, '');
         const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
+        if (headerName.includes('grid1_show_carry')) {
+          acc[headerName] = cellValue === undefined ? 'no' : cellValue;
+        }
+        if (headerName.includes('grid1_show_regroup')) {
+          acc[headerName] = cellValue === undefined ? 'no' : cellValue;
+        }
         if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
           acc.body = acc.body || {};
           acc.body[headerName] = cellValue;
@@ -173,75 +179,6 @@ export const processRow = (rows: string[][], header: string[]) => {
     ),
   );
 };
-
-// export const getUniqueValues = (data: any) => {
-//   const keys = ['l1_skill', 'l2_skill', 'l3_skill', 'board', 'class', 'sub_skills'];
-
-//   return _.reduce(
-//     keys,
-//     (acc, key) => {
-//       if (key === 'l2_skill' || key === '13_skill' || key === 'sub_skills') {
-//         acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
-//       } else {
-//         acc[key] = _.uniqBy(data, key)
-//           .map((item) => item[key])
-//           .filter((value) => value !== undefined);
-//       }
-//       return acc;
-//     },
-//     {},
-//   );
-// };
-
-// export const checkValidity = async (data: any) => {
-//   const uniqueValues: any = getUniqueValues(data);
-//   const { boards, classes, skills, subSkills, repositories } = await preloadData();
-
-//   const mismatches = {
-//     boards: _.difference(
-//       uniqueValues.board,
-//       boards.flatMap((board) => board.name.en),
-//     ),
-//     classes: _.difference(
-//       uniqueValues.class,
-//       classes.flatMap((Class) => Class.name.en),
-//     ),
-//     repository: _.difference(
-//       uniqueValues.repository,
-//       repositories.flatMap((repo) => repo.name.en),
-//     ),
-//     l1_skill: _.difference(
-//       uniqueValues.l1_skill,
-//       skills.filter((skill) => skill.type === 'l1_skill').map((skill) => skill.name.en),
-//     ),
-//     l2_skill: _.difference(
-//       uniqueValues.l2_skill,
-//       skills.filter((skill) => skill.type === 'l2_skill').map((skill) => skill.name.en),
-//     ),
-//     l3_skill: _.difference(
-//       _.flatMap(uniqueValues.l3_skill),
-//       skills.filter((skill) => skill.type === 'l3_skill').map((skill) => skill.name.en),
-//     ),
-//     sub_skills: _.difference(
-//       uniqueValues.sub_skills,
-//       subSkills.flatMap((Sub_skill) => Sub_skill.name.en),
-//     ),
-//   };
-
-//   const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
-
-//   if (hasMismatch) {
-//     return {
-//       error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
-//       result: { isValid: false, data: null },
-//     };
-//   }
-
-//   return {
-//     error: { errStatus: null, errMsg: null },
-//     result: { isValid: true, data: uniqueValues },
-//   };
-// };
 
 export const getUniqueValues = (data: any[]): UniqueValues => {
   const keys = ['l1_skill', 'l2_skill', 'l3_skill', 'board', 'class', 'sub_skills'];

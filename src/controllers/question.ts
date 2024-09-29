@@ -584,86 +584,90 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
   }
 };
 
-const addSubAnswer = (input: any, baseSkill: string) => {
-  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, show_prefil } = input;
+const addSubAnswer = (input: any, l1_skill: string) => {
+  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_carry, grid1_show_regroup } = input;
 
-  // Convert n1 and n2 to strings (in case they aren't) and pad with zeros to match length
-  const n1Str = grid_fib_n1.toString().padStart(Math.max(grid_fib_n1.length, grid_fib_n2.length), '0');
-  const n2Str = grid_fib_n2.toString().padStart(n1Str.length, '0');
+  const n1Str = grid_fib_n1.padStart(Math.max(grid_fib_n1.length, grid_fib_n2.length), '0');
+  const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
 
   let result = 0;
   let answerTop = '';
   let answerResult = '';
+  let isPrefil;
 
-  // Perform addition or subtraction by first converting strings to numbers
-  if (baseSkill === 'Addition') {
+  if (l1_skill === 'Addition') {
     result = parseInt(n1Str) + parseInt(n2Str);
-  } else if (baseSkill === 'Subtraction') {
+    isPrefil = grid1_show_carry === 'yes' ? true : false;
+  } else if (l1_skill === 'Subtraction') {
     result = parseInt(n1Str) - parseInt(n2Str);
+    isPrefil = grid1_show_regroup === 'yes' ? true : false;
   }
 
-  // Calculate the length of the result and pad with zeros if necessary
   const resultStr = result.toString().padStart(n1Str.length, '0');
 
-  // If `grid1_pre_fills_top` or `grid1_pre_fills_result` is an empty string, assume all 'B'
-  const prefillTop = grid1_pre_fills_top === '' ? 'B'.repeat(n1Str.length) : grid1_pre_fills_top;
-  const prefillResult = grid1_pre_fills_result === '' ? 'B'.repeat(n1Str.length) : grid1_pre_fills_result;
+  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(n1Str.length - grid1_pre_fills_top.length) : 'B'.repeat(n1Str.length);
 
-  // If `show_prefil` is false, treat all prefills as 'B'
-  const finalPrefillTop = show_prefil ? prefillTop : 'B'.repeat(n1Str.length);
-  const finalPrefillResult = show_prefil ? prefillResult : 'B'.repeat(n1Str.length);
+  const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
-  // Loop through each character to handle `prefilTop` and `prefilResult`
-  for (let i = 0; i < n1Str.length; i++) {
-    // For answerTop, use 'B' if finalPrefillTop[i] is 'B', otherwise use the digit from n1
-    if (finalPrefillTop[i] === 'B') {
-      answerTop += 'B';
-    } else if (finalPrefillTop[i] === 'F') {
-      answerTop += n1Str[i];
-    }
-
-    // For answerResult, use 'B' if finalPrefillResult[i] is 'B', otherwise use the digit from result
-    if (finalPrefillResult[i] === 'B') {
+  for (let i = resultStr.length - 1; i >= 0; i--) {
+    if (updatedPrefilResult[i] === 'B') {
       answerResult += 'B';
     } else {
       answerResult += resultStr[i];
     }
   }
 
+  if (isPrefil && l1_skill === 'Addition') {
+    let carry = 0;
+    for (let i = n1Str.length - 1; i >= 0; i--) {
+      const sum = parseInt(n1Str[i]) + parseInt(n2Str[i]) + carry;
+      carry = Math.floor(sum / 10);
+
+      if (finalPrefillTop[i] === 'B') {
+        answerTop = 'B' + answerTop;
+      } else {
+        answerTop = carry.toString() + answerTop;
+      }
+    }
+  } else if (isPrefil && l1_skill === 'Subtraction') {
+    let borrow = 0;
+    for (let i = n1Str.length - 1; i >= 0; i--) {
+      let n1Digit = parseInt(n1Str[i]);
+      const n2Digit = parseInt(n2Str[i]) + borrow;
+
+      if (n1Digit < n2Digit) {
+        borrow = 1;
+        n1Digit += 10;
+      } else {
+        borrow = 0;
+      }
+
+      const difference = n1Digit - n2Digit;
+      if (finalPrefillTop[i] === 'B') {
+        answerTop = 'B' + answerTop;
+      } else {
+        answerTop = difference.toString();
+      }
+    }
+  } else {
+    answerTop = 'B'.repeat(n1Str.length);
+  }
   return {
-    result: parseInt(resultStr), // Returning the result as a number
+    result: parseInt(resultStr),
     answerTop,
-    answerResult,
+    answerResult: answerResult.split('').reverse().join(''),
   };
 };
 
-const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPattern?: string) => {
+const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPattern?: any) => {
   const n1 = Number(num1);
   const n2 = Number(num2);
-
-  // Helper function
-  const applyPrefillPattern = (numStr: string, pattern: string) => {
-    let result = '';
-    const patternLength = pattern.length;
-
-    for (let i = 0; i < numStr.length; i++) {
-      if (i < patternLength) {
-        const char = pattern[i] === 'B' ? 'B' : numStr[i];
-        result += char; // Apply the prefill or keep the original digit
-      } else {
-        result += 'B'; // For any remaining digits, fill with 'B'
-      }
-    }
-    return result;
-  };
-
   if (type === 'Grid-1') {
     const num2Str = num2.toString();
     const num2Length = num2Str.length;
     let intermediateStep = '';
     let runningTotal = 0;
 
-    // Compute each step of multiplication
     for (let i = 0; i < num2Length; i++) {
       const placeValue = parseInt(num2Str[num2Length - 1 - i]) * Math.pow(10, i);
       const product = n1 * placeValue;
@@ -671,9 +675,8 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
       runningTotal += product;
     }
 
-    // If a prefill pattern is provided, apply it
-    if (prefillPattern) {
-      intermediateStep = applyPrefillPattern(intermediateStep, prefillPattern);
+    if (prefillPattern.grid1_multiply_intermediate_steps_prefills.includes('F')) {
+      intermediateStep = applyPrefillPattern(intermediateStep, prefillPattern.grid1_multiply_intermediate_steps_prefills);
     }
 
     return {
@@ -684,7 +687,6 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
 
   const result = n1 * n2;
 
-  // Apply prefill pattern to the final result if provided
   if (prefillPattern) {
     return {
       intermediateStep: '',
@@ -705,14 +707,12 @@ const divideWithSteps = (dividend: number, divisor: number, type: string, prefil
     const quotient = Math.floor(dividend / divisor);
     let remainder = dividend;
 
-    // Capture each step of division
     while (remainder >= divisor) {
       const currentStep = Math.floor(remainder / divisor) * divisor;
       steps.push(currentStep.toString());
       remainder -= currentStep;
     }
 
-    // If a prefill pattern is provided, apply it to the steps
     if (prefillPattern) {
       for (let i = 0; i < steps.length; i++) {
         steps[i] = applyPrefillPattern(steps[i], prefillPattern);
@@ -728,7 +728,6 @@ const divideWithSteps = (dividend: number, divisor: number, type: string, prefil
   return { answer: dividend / divisor };
 };
 
-// Helper function to apply the prefill pattern
 const applyPrefillPattern = (numStr: string, pattern: string) => {
   let result = '';
   const patternLength = pattern.length;
@@ -736,9 +735,9 @@ const applyPrefillPattern = (numStr: string, pattern: string) => {
   for (let i = 0; i < numStr.length; i++) {
     if (i < patternLength) {
       const char = pattern[i] === 'B' ? 'B' : numStr[i];
-      result += char; // Apply the prefill or keep the original digit
+      result += char;
     } else {
-      result += 'B'; // For any remaining digits, fill with 'B'
+      result += 'B';
     }
   }
   return result;
