@@ -208,8 +208,8 @@ const validateStagedQuestionData = async () => {
     };
   }
   for (const question of getAllQuestionStage) {
-    const { id, question_id, question_set_id, question_type, L1_skill, body } = question;
-    const checkRecord = await questionStageMetaData({ question_id, question_set_id, L1_skill, question_type });
+    const { id, question_id, question_set_id, question_type, l1_skill, body } = question;
+    const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type });
     if (checkRecord.error) {
       logger.error(`Validate Question Stage:: ${processId} ,th unexpected error .`);
       return {
@@ -232,7 +232,7 @@ const validateStagedQuestionData = async () => {
       isUnique = false;
     }
     let requiredFields: string[] = [];
-    const caseKey = question_type === 'Grid-1' ? `${question_type}_${L1_skill}` : question_type;
+    const caseKey = question_type === 'Grid-1' ? `${question_type}_${l1_skill}` : question_type;
     switch (caseKey) {
       case `Grid-1_add`:
         requiredFields = grid1AddFields;
@@ -470,7 +470,7 @@ const processQuestionStage = (questionsData: any) => {
     Fib: fibFields,
   };
   questionsData.forEach((question: any) => {
-    const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.L1_skill}` : question.question_type;
+    const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.l1_skill}` : question.question_type;
     const relevantFields = fieldMapping[questionType];
     const filteredBody: any = {};
     relevantFields.forEach((field: any) => {
@@ -503,13 +503,14 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sub_skill_xx = null,
       sub_skill_x0 = null,
     } = obj.body || {};
-    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.L1_skill) || { id: null };
+
+    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { id: null };
     const transferData = {
       identifier: uuid.v4(),
       question_id: obj.question_id,
       question_set_id: questionSetId.id,
       question_type: obj.question_type,
-      operation: obj.L1_skill,
+      operation: obj.l1_skill,
       hints: obj.hint,
       sequence: obj.sequence,
       name: { en: obj.title || obj.question_text },
@@ -519,16 +520,16 @@ const formatQuestionStageData = async (stageData: any[]) => {
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.name.en == obj.L1_skill),
-        l2_skill: obj.L2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.L3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
+        l2_skill: obj.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
       sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       question_body: {
         numbers: [grid_fib_n1, grid_fib_n2],
         options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
         correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
-        answers: getAnswer(obj.L1_skill, grid_fib_n1, grid_fib_n2, obj.question_type),
+        answers: getAnswer(obj.l1_skill, grid_fib_n1, grid_fib_n2, obj.question_type, obj.body, obj.question_type),
         wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
       },
       benchmark_time: obj.benchmark_time,
@@ -543,23 +544,6 @@ const formatQuestionStageData = async (stageData: any[]) => {
 
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
-};
-
-const getAnswer = (skill: string, num1: string, num2: string, type: string) => {
-  switch (skill) {
-    case 'Multiplication':
-      return multiplyWithSteps(num1, num2, type);
-    case 'Division':
-      return divideWithSteps(Number(num2), Number(num1), type);
-    case 'Addition':
-      logger.info('Add:: got a value for addition  numbers');
-      return Number(num1) + Number(num2);
-    case 'Subtraction':
-      logger.info('sub:: got a value for subtraction  numbers');
-      return Number(num1) - Number(num2);
-    default:
-      return undefined;
-  }
 };
 
 const convertWrongAnswerSubSkills = (inputData: any) => {
@@ -582,43 +566,159 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
   return wrongAnswers;
 };
 
-const multiplyWithSteps = (num1: string, num2: string, type: string) => {
+const getAnswer = (skill: string, num1: string, num2: string, type: string, bodyObject: any, question_type: string) => {
+  switch (`${skill}_${question_type}`) {
+    case 'Multiplication_Grid-1':
+      return multiplyWithSteps(num1, num2, type, bodyObject);
+    case 'Division_Grid-1':
+      return divideWithSteps(Number(num2), Number(num1), type, bodyObject);
+
+    case 'Addition_Grid-1':
+      return addSubAnswer(bodyObject, skill);
+
+    case 'Subtraction_Grid-1':
+      return addSubAnswer(bodyObject, skill);
+
+    default:
+      return undefined;
+  }
+};
+
+const addSubAnswer = (input: any, baseSkill: string) => {
+  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, show_prefil } = input;
+
+  // Convert n1 and n2 to strings (in case they aren't) and pad with zeros to match length
+  const n1Str = grid_fib_n1.toString().padStart(Math.max(grid_fib_n1.length, grid_fib_n2.length), '0');
+  const n2Str = grid_fib_n2.toString().padStart(n1Str.length, '0');
+
+  let result = 0;
+  let answerTop = '';
+  let answerResult = '';
+
+  // Perform addition or subtraction by first converting strings to numbers
+  if (baseSkill === 'Addition') {
+    result = parseInt(n1Str) + parseInt(n2Str);
+  } else if (baseSkill === 'Subtraction') {
+    result = parseInt(n1Str) - parseInt(n2Str);
+  }
+
+  // Calculate the length of the result and pad with zeros if necessary
+  const resultStr = result.toString().padStart(n1Str.length, '0');
+
+  // If `grid1_pre_fills_top` or `grid1_pre_fills_result` is an empty string, assume all 'B'
+  const prefillTop = grid1_pre_fills_top === '' ? 'B'.repeat(n1Str.length) : grid1_pre_fills_top;
+  const prefillResult = grid1_pre_fills_result === '' ? 'B'.repeat(n1Str.length) : grid1_pre_fills_result;
+
+  // If `show_prefil` is false, treat all prefills as 'B'
+  const finalPrefillTop = show_prefil ? prefillTop : 'B'.repeat(n1Str.length);
+  const finalPrefillResult = show_prefil ? prefillResult : 'B'.repeat(n1Str.length);
+
+  // Loop through each character to handle `prefilTop` and `prefilResult`
+  for (let i = 0; i < n1Str.length; i++) {
+    // For answerTop, use 'B' if finalPrefillTop[i] is 'B', otherwise use the digit from n1
+    if (finalPrefillTop[i] === 'B') {
+      answerTop += 'B';
+    } else if (finalPrefillTop[i] === 'F') {
+      answerTop += n1Str[i];
+    }
+
+    // For answerResult, use 'B' if finalPrefillResult[i] is 'B', otherwise use the digit from result
+    if (finalPrefillResult[i] === 'B') {
+      answerResult += 'B';
+    } else {
+      answerResult += resultStr[i];
+    }
+  }
+
+  return {
+    result: parseInt(resultStr), // Returning the result as a number
+    answerTop,
+    answerResult,
+  };
+};
+
+const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPattern?: string) => {
   const n1 = Number(num1);
   const n2 = Number(num2);
+
+  // Helper function
+  const applyPrefillPattern = (numStr: string, pattern: string) => {
+    let result = '';
+    const patternLength = pattern.length;
+
+    for (let i = 0; i < numStr.length; i++) {
+      if (i < patternLength) {
+        const char = pattern[i] === 'B' ? 'B' : numStr[i];
+        result += char; // Apply the prefill or keep the original digit
+      } else {
+        result += 'B'; // For any remaining digits, fill with 'B'
+      }
+    }
+    return result;
+  };
+
   if (type === 'Grid-1') {
     const num2Str = num2.toString();
     const num2Length = num2Str.length;
     let intermediateStep = '';
     let runningTotal = 0;
+
+    // Compute each step of multiplication
     for (let i = 0; i < num2Length; i++) {
       const placeValue = parseInt(num2Str[num2Length - 1 - i]) * Math.pow(10, i);
       const product = n1 * placeValue;
-      intermediateStep += product;
+      intermediateStep += product.toString();
       runningTotal += product;
     }
+
+    // If a prefill pattern is provided, apply it
+    if (prefillPattern) {
+      intermediateStep = applyPrefillPattern(intermediateStep, prefillPattern);
+    }
+
     return {
       intermediateStep: intermediateStep,
       result: runningTotal,
     };
   }
 
-  return { answer: n1 * n2 };
+  const result = n1 * n2;
+
+  // Apply prefill pattern to the final result if provided
+  if (prefillPattern) {
+    return {
+      intermediateStep: '',
+      result: applyPrefillPattern(result.toString(), prefillPattern),
+    };
+  }
+
+  return { result };
 };
 
-const divideWithSteps = (dividend: number, divisor: number, type: string) => {
-  if (type == 'Grid-1') {
+const divideWithSteps = (dividend: number, divisor: number, type: string, prefillPattern?: string) => {
+  if (type === 'Grid-1') {
     if (divisor === 0) {
       throw new Error('Division by zero is not allowed.');
     }
 
-    const steps = [];
+    const steps: string[] = [];
     const quotient = Math.floor(dividend / divisor);
     let remainder = dividend;
+
+    // Capture each step of division
     while (remainder >= divisor) {
       const currentStep = Math.floor(remainder / divisor) * divisor;
-      steps.push(currentStep);
+      steps.push(currentStep.toString());
       remainder -= currentStep;
     }
+
+    // If a prefill pattern is provided, apply it to the steps
+    if (prefillPattern) {
+      for (let i = 0; i < steps.length; i++) {
+        steps[i] = applyPrefillPattern(steps[i], prefillPattern);
+      }
+    }
+
     return {
       steps: steps,
       quotient: quotient,
@@ -626,4 +726,20 @@ const divideWithSteps = (dividend: number, divisor: number, type: string) => {
     };
   }
   return { answer: dividend / divisor };
+};
+
+// Helper function to apply the prefill pattern
+const applyPrefillPattern = (numStr: string, pattern: string) => {
+  let result = '';
+  const patternLength = pattern.length;
+
+  for (let i = 0; i < numStr.length; i++) {
+    if (i < patternLength) {
+      const char = pattern[i] === 'B' ? 'B' : numStr[i];
+      result += char; // Apply the prefill or keep the original digit
+    } else {
+      result += 'B'; // For any remaining digits, fill with 'B'
+    }
+  }
+  return result;
 };

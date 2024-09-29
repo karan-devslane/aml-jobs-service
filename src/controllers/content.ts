@@ -192,8 +192,8 @@ const validateStagedContentData = async () => {
     };
   }
   for (const content of getAllContentStage) {
-    const { id, content_id, L1_skill } = content;
-    const checkRecord = await contentStageMetaData({ content_id, L1_skill });
+    const { id, content_id, l1_skill } = content;
+    const checkRecord = await contentStageMetaData({ content_id, l1_skill });
     if (checkRecord.length > 1) {
       await updateContentStage(
         { id },
@@ -401,9 +401,9 @@ const formatStagedContentData = async (stageData: any[]) => {
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.name.en == obj.L1_skill),
-        l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
+        l2_skill: obj.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
       sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       gradient: obj.gradient,

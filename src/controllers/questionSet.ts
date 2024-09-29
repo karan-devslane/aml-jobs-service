@@ -196,8 +196,8 @@ const validateQuestionSetsStage = async () => {
   }
   let isValid = true;
   for (const questionSet of getAllQuestionSetStage) {
-    const { id, question_set_id, L1_skill } = questionSet;
-    const checkRecord = await questionSetStageMetaData({ question_set_id, L1_skill });
+    const { id, question_set_id, l1_skill } = questionSet;
+    const checkRecord = await questionSetStageMetaData({ question_set_id, l1_skill });
     if (checkRecord.error) {
       logger.error(`Validate Question Set Stage:: ${processId} ,unexpected error .`);
       return {
@@ -344,9 +344,9 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
       taxonomy: {
         board: boards.find((board: any) => board.name.en === obj.board),
         class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.name.en == obj.L1_skill),
-        l2_skill: obj.L2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.L3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
+        l2_skill: obj.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        l3_skill: obj.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
       },
       sub_skills: SubSkills ?? null,
       purpose: obj.purpose,
