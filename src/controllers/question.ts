@@ -660,6 +660,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 };
 
 const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPattern?: any) => {
+  const { grid1_multiply_intermediate_steps_prefills, grid1_pre_fills_result } = prefillPattern;
   const n1 = Number(num1);
   const n2 = Number(num2);
   if (type === 'Grid-1') {
@@ -667,6 +668,8 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
     const num2Length = num2Str.length;
     let intermediateStep = '';
     let runningTotal = 0;
+    let answerResult = '';
+    let answerIntermediateResult = '';
 
     for (let i = 0; i < num2Length; i++) {
       const placeValue = parseInt(num2Str[num2Length - 1 - i]) * Math.pow(10, i);
@@ -675,26 +678,36 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
       runningTotal += product;
     }
 
-    if (prefillPattern.grid1_multiply_intermediate_steps_prefills.includes('F')) {
-      intermediateStep = applyPrefillPattern(intermediateStep, prefillPattern.grid1_multiply_intermediate_steps_prefills);
+    const runningTotalAsString = runningTotal.toString();
+    if (grid1_pre_fills_result.includes('F')) {
+      const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(runningTotalAsString.length - grid1_pre_fills_result.length);
+      for (let i = runningTotalAsString.length - 1; i >= 0; i--) {
+        if (updatedPrefilResult[i] === 'B') {
+          answerResult += 'B';
+        } else {
+          answerResult += runningTotalAsString.toString()[i];
+        }
+      }
+    }
+    if (grid1_multiply_intermediate_steps_prefills.includes('F')) {
+      const updatedIntermediatePrefilResult = grid1_multiply_intermediate_steps_prefills + 'B'.repeat(intermediateStep.length - grid1_multiply_intermediate_steps_prefills.length);
+      for (let i = intermediateStep.length - 1; i >= 0; i--) {
+        if (updatedIntermediatePrefilResult[i] === 'B') {
+          answerIntermediateResult += 'B';
+        } else {
+          answerIntermediateResult += intermediateStep[i];
+        }
+      }
     }
 
     return {
       intermediateStep: intermediateStep,
       result: runningTotal,
+      intermediatePrefil: answerIntermediateResult,
+      answerPrefil: answerResult,
     };
   }
-
-  const result = n1 * n2;
-
-  if (prefillPattern) {
-    return {
-      intermediateStep: '',
-      result: applyPrefillPattern(result.toString(), prefillPattern),
-    };
-  }
-
-  return { result };
+  return { result: n1 * n2 };
 };
 
 const divideWithSteps = (dividend: number, divisor: number, type: string, prefillPattern?: string) => {
