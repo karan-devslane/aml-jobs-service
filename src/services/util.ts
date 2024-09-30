@@ -185,7 +185,7 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
 
   return _.reduce(
     keys,
-    (acc: Partial<UniqueValues>, key) => {
+    (acc: any, key) => {
       if (key === 'l2_skill' || key === 'l3_skill' || key === 'sub_skills') {
         acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
       } else {
