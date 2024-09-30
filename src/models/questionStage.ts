@@ -45,17 +45,17 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    L1_skill: {
-      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+    l1_skill: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
-    L2_skill: {
-      type: DataTypes.ARRAY(DataTypes.ENUM('1Digits', '2Digits', '3Digits', '4Digits')),
-      allowNull: false,
-    },
-    L3_skill: {
+    l2_skill: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: false,
+    },
+    l3_skill: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: true,
     },
     gradient: {
       type: DataTypes.STRING,
@@ -89,11 +89,11 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
-    sub_skill_x0: {
+    sub_skill_x_plus_0: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
-    sub_skill_xx: {
+    sub_skill_x_plus_x: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },

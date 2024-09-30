@@ -1,6 +1,8 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { appConfiguration } from '../config';
 import logger from '../utils/logger';
+import path from 'path';
+import mime from 'mime-types';
 
 const { bucketName } = appConfiguration;
 
@@ -15,8 +17,9 @@ export const getAWSFolderData = async (filePath: string) => {
   logger.info('stream object get from cloud');
   return response.Body;
 };
-
 export const uploadMediaFile = async (filesData: any, type: string) => {
+  const filepath = path.extname(filesData.entryName);
+  const fileMimeType = mime.lookup(filepath) || 'application/octet-stream';
   const fileName = filesData.entryName.split('/')[1];
   const command = new PutObjectCommand({
     Bucket: bucketName,
@@ -24,7 +27,7 @@ export const uploadMediaFile = async (filesData: any, type: string) => {
     Body: filesData.getData(),
   });
   await s3Client.send(command);
-  return { fileName: fileName, src: `media/${type}` };
+  return { file_name: fileName, src: `media/${type}`, mime_type: fileMimeType, mediaType: fileMimeType.split('/')[0] };
 };
 
 export const uploadCsvFile = async (filesData: any, fileName: string) => {

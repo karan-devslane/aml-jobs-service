@@ -14,7 +14,7 @@ export const Question = AppDataSource.define(
       allowNull: false,
     },
     question_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     question_set_id: {
@@ -26,11 +26,11 @@ export const Question = AppDataSource.define(
       allowNull: false,
     },
     question_type: {
-      type: DataTypes.ENUM('Grid-1', 'mcq', 'fib', 'Grid-2'),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     operation: {
-      type: DataTypes.ENUM('Addition', 'Subtraction', 'Multiplication', 'Division'),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     name: {
@@ -43,7 +43,7 @@ export const Question = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     repository: {
       type: DataTypes.JSONB,
@@ -67,11 +67,15 @@ export const Question = AppDataSource.define(
     },
     media: {
       type: DataTypes.ARRAY(DataTypes.JSONB),
-      allowNull: false,
+      allowNull: true,
     },
     question_body: {
       type: DataTypes.JSONB,
       allowNull: false,
+    },
+    sub_skills: {
+      type: DataTypes.JSONB,
+      allowNull: true,
     },
     created_by: {
       type: DataTypes.STRING,

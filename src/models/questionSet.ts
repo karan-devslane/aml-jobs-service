@@ -35,14 +35,14 @@ export const QuestionSet = AppDataSource.define(
     },
     tenant: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     taxonomy: {
       type: DataTypes.JSONB,
       allowNull: false,
     },
     sub_skills: {
-      type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     purpose: {
@@ -52,7 +52,7 @@ export const QuestionSet = AppDataSource.define(
     is_atomic: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: true,
+      defaultValue: false,
     },
     gradient: {
       type: DataTypes.STRING,
@@ -63,7 +63,7 @@ export const QuestionSet = AppDataSource.define(
       allowNull: true,
     },
     content_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       allowNull: true,
     },
     instruction_text: {

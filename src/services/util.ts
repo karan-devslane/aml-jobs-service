@@ -1,9 +1,12 @@
 import logger from '../utils/logger';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
+import _ from 'lodash';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
 import { appConfiguration } from '../config';
+import { Board, Class, Skill, SubSkill, UniqueValues, Mismatches } from '../types/util';
+
 const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
 let processId: string;
@@ -100,7 +103,7 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
   if (header.length !== templateHeader.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return {
-      error: { errStatus: null, errMsg: null },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not matched with header length.` },
       result: {
         isValid: false,
         data: null,
@@ -112,7 +115,7 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
   if (!validHeader) {
     logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
     return {
-      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the expected CSV format.` },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column name ` },
       result: {
         isValid: false,
         data: null,
@@ -135,10 +138,16 @@ export const processRow = (rows: string[][], header: string[]) => {
       (acc, cell, index) => {
         const headerName = header[index].replace(/\r/g, '');
         const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
+        if (headerName.includes('grid1_show_carry')) {
+          acc[headerName] = cellValue === undefined ? 'no' : cellValue;
+        }
+        if (headerName.includes('grid1_show_regroup')) {
+          acc[headerName] = cellValue === undefined ? 'no' : cellValue;
+        }
         if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
           acc.body = acc.body || {};
           acc.body[headerName] = cellValue;
-        } else if (headerName.includes('L2_skill') || headerName.includes('L3_skill') || headerName.includes('sub_skill')) {
+        } else if (headerName.includes('l2_skill') || headerName.includes('l3_skill') || headerName.includes('sub_skill')) {
           acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName.includes('media')) {
           acc.media_files = acc.media_files || [];
@@ -149,26 +158,97 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['question_id'] = cellValue;
         } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
           acc[headerName] = Number(cellValue);
-        } else if (headerName.includes('sub_skill_x+x')) {
+        } else if (headerName.includes('x+x')) {
           acc['sub_skill_xx'] = cellValue;
-        } else if (headerName.includes('sub_skill_x+0')) {
+        } else if (headerName.includes('x+0')) {
           acc['sub_skill_x0'] = cellValue;
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
         } else if (headerName.includes('instruction_media')) {
-          acc['instruction_media'] = cellValue;
+          acc['instruction_media'] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName.includes('instruction_text')) {
-          acc['instruction_media'] = cellValue;
+          acc['instruction_text'] = cellValue;
         } else {
           acc[headerName] = cellValue;
         }
         acc.process_id = processId;
+        acc.created_by = 'system';
         return acc;
       },
       {} as Record<string, any>,
     ),
   );
 };
+
+export const getUniqueValues = (data: any[]): UniqueValues => {
+  const keys = ['l1_skill', 'l2_skill', 'l3_skill', 'board', 'class', 'sub_skills'];
+
+  return _.reduce(
+    keys,
+    (acc: Partial<UniqueValues>, key) => {
+      if (key === 'l2_skill' || key === 'l3_skill' || key === 'sub_skills') {
+        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
+      } else {
+        acc[key] = _.uniqBy(data, key)
+          .map((item) => item[key])
+          .filter((value) => value !== undefined);
+      }
+      return acc;
+    },
+    {},
+  ) as UniqueValues;
+};
+
+export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: UniqueValues | null } }> => {
+  const uniqueValues: UniqueValues = getUniqueValues(data);
+  const { boards, classes, skills, subSkills, repositories } = await preloadData();
+
+  const mismatches: Mismatches = {
+    boards: _.difference(
+      uniqueValues.board,
+      boards.flatMap((board: Board) => board.name.en),
+    ),
+    classes: _.difference(
+      uniqueValues.class,
+      classes.flatMap((Class: Class) => Class.name.en),
+    ),
+    repository: _.difference(
+      uniqueValues.repository || [],
+      repositories.flatMap((repo: Board) => repo.name.en),
+    ),
+    l1_skill: _.difference(
+      uniqueValues.l1_skill,
+      skills.filter((skill: Skill) => skill.type === 'l1_skill').map((skill: Skill) => skill.name.en),
+    ),
+    l2_skill: _.difference(
+      uniqueValues.l2_skill,
+      skills.filter((skill: Skill) => skill.type === 'l2_skill').map((skill: Skill) => skill.name.en),
+    ),
+    l3_skill: _.difference(
+      _.flatMap(uniqueValues.l3_skill),
+      skills.filter((skill: Skill) => skill.type === 'l3_skill').map((skill: Skill) => skill.name.en),
+    ),
+    sub_skills: _.difference(
+      uniqueValues.sub_skills,
+      subSkills.flatMap((Sub_skill: SubSkill) => Sub_skill.name.en),
+    ),
+  };
+
+  const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
+
+  if (hasMismatch) {
+    return {
+      error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
+      result: { isValid: false, data: null },
+    };
+  }
+
+  return {
+    error: { errStatus: null, errMsg: null },
+    result: { isValid: true, data: uniqueValues },
+  };
+};
+
 export const convertToCSV = async (jsonData: any, fileName: string) => {
   const json2csvParser = new Parser();
   const csv = json2csvParser.parse(jsonData);
