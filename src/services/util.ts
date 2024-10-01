@@ -81,22 +81,33 @@ export const getCSVTemplateHeader = async (entryName: string) => {
 };
 
 export const getCSVHeaderAndRow = (csvEntries: any) => {
-  const [header, ...rows] = csvEntries
-    .getData()
-    .toString('utf8')
-    .split('\n')
-    .map((row: string) => row.split(','))
-    .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
-  logger.info('Row/Header:: header and rows are extracted');
-  const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
-  const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
-  return {
-    error: { errStatus: null, errMsg: null },
-    result: {
-      isValid: true,
-      data: { header: cleanHeader, rows: cleanRows },
-    },
-  };
+  try {
+    const [header, ...rows] = csvEntries
+      .getData()
+      .toString('utf8')
+      .split('\n')
+      .map((row: string) => row.split(','))
+      .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
+    logger.info('Row/Header:: header and rows are extracted');
+    const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
+    const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
+    return {
+      error: { errStatus: null, errMsg: null },
+      result: {
+        isValid: true,
+        data: { header: cleanHeader, rows: cleanRows },
+      },
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Error while accessing the row and header';
+    return {
+      error: { errStatus: 'Unexpected error', errMsg: errorMsg },
+      result: {
+        isValid: true,
+        data: { header: '', rows: '' },
+      },
+    };
+  }
 };
 
 export const validateHeader = (entryName: string, header: any, templateHeader: any) => {
@@ -111,11 +122,18 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
     };
   }
 
-  const validHeader = templateHeader.every((col: any, i: number) => col === header[i]);
+  const mismatchedColumns: string[] = [];
+  const validHeader = templateHeader.every((col: string, i: number) => {
+    if (col !== header[i]) {
+      mismatchedColumns.push(`Expected: '${col}', Found: '${header[i]}'`);
+      return false;
+    }
+    return true;
+  });
   if (!validHeader) {
-    logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
+    logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format. Mismatched columns: ${mismatchedColumns.join(', ')}`);
     return {
-      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column name ` },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column names. Mismatched columns: ${mismatchedColumns.join(', ')}` },
       result: {
         isValid: false,
         data: null,
@@ -199,7 +217,7 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
   ) as UniqueValues;
 };
 
-export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: UniqueValues | null } }> => {
+export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: any } }> => {
   const uniqueValues: UniqueValues = getUniqueValues(data);
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
 
@@ -237,9 +255,14 @@ export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: 
   const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
 
   if (hasMismatch) {
+    const mismatchedFields = Object.entries(mismatches)
+      .filter(([, mismatchArray]) => mismatchArray.length > 0)
+      .map(([field, mismatchedArray]) => `${field}: ${mismatchedArray.join(', ')}`)
+      .join('; ');
+    logger.error(`One or more values do not match the preloaded data.${mismatchedFields}`);
     return {
-      error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
-      result: { isValid: false, data: null },
+      error: { errStatus: 'Mismatch', errMsg: `One or more values do not match the preloaded data.${mismatchedFields}` },
+      result: { isValid: false, data: [mismatchedFields] },
     };
   }
 

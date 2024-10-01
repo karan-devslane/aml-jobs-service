@@ -33,19 +33,13 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
   for (const questions of questionsCsv) {
     const validQuestionHeader = await validateCSVQuestionHeaderRow(questions);
-    if (!validQuestionHeader.result.isValid) {
-      logger.error('error while progressing data');
-      return validQuestionHeader;
-    }
+    if (!validQuestionHeader.result.isValid) return validQuestionHeader;
     const {
       result: { data },
     } = validQuestionHeader;
 
     const validQuestionRows = processQuestionRows(data?.rows, data?.header);
-    if (!validQuestionRows.result.isValid) {
-      logger.error('error while processing data');
-      return validQuestionRows;
-    }
+    if (!validQuestionRows.result.isValid) return validQuestionRows;
     const { result } = validQuestionRows;
 
     questionsData = questionsData.concat(result.data);
@@ -63,14 +57,10 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
   logger.info('Insert question Stage::Questions Data ready for bulk insert');
   const createQuestions = await bulkInsertQuestionStage(questionsData);
-  if (!createQuestions.result.isValid) {
-    logger.error('Error while creating stage question table');
-    return createQuestions;
-  }
+  if (!createQuestions.result.isValid) return createQuestions;
 
   const validateQuestions = await validateStagedQuestionData();
   if (!validateQuestions.result.isValid) {
-    logger.error('Error while validating stage question table');
     const uploadQuestion = await uploadErroredQuestionsToCloud();
     if (!uploadQuestion.result.isValid) return uploadQuestion;
     return validateQuestions;
@@ -100,7 +90,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
   }
   const questionRowHeader = getCSVHeaderAndRow(questionEntry);
   if (!questionRowHeader.result.isValid) {
-    logger.error('Question Row/header::Template header, header, or rows are missing');
+    logger.error(`Question Row/header::Template header, header, or rows are missing  for file ${questionEntry.entryName}`);
     return questionRowHeader;
   }
   const {
@@ -110,7 +100,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
   } = questionRowHeader;
   const isValidHeader = validateHeader(questionEntry.entryName, header, templateHeader.result.data);
   if (!isValidHeader.result.isValid) {
-    logger.error('Question Row/header::Header validation failed');
+    logger.error(isValidHeader.error.errMsg);
     return isValidHeader;
   }
   logger.info(`Question Row/header::Row and Header mapping process started for ${processId} `);
@@ -160,9 +150,9 @@ const processQuestionRows = (rows: any, header: any) => {
 const bulkInsertQuestionStage = async (insertData: object[]) => {
   const questionStage = await createQuestionStage(insertData);
   if (questionStage.error) {
-    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting`);
+    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting ${questionStage.message}`);
     return {
-      error: { errStatus: 'errored', errMsg: 'question bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: questionStage.message },
       result: {
         isValid: false,
         data: null,
@@ -184,9 +174,9 @@ const validateStagedQuestionData = async () => {
   const validateMetadata = await checkValidity(getAllQuestionStage);
   if (!validateMetadata.result.isValid) return validateMetadata;
   if (getAllQuestionStage.error) {
-    logger.error(`Validate Question Stage:: ${processId} ,th unexpected error .`);
+    logger.error(`Validate Question Stage:: ${processId} , ${getAllQuestionStage.message}.`);
     return {
-      error: { errStatus: 'error', errMsg: `Validate Question Stage:: ${processId} ,th unexpected error .` },
+      error: { errStatus: 'error', errMsg: `Validate Question Stage:: ${processId} , ${getAllQuestionStage.message}.` },
       result: {
         isValid: false,
         data: null,
@@ -198,9 +188,9 @@ const validateStagedQuestionData = async () => {
   let errStatus = null,
     errMsg = null;
   if (_.isEmpty(getAllQuestionStage)) {
-    logger.error(`Validate Question Stage:: ${processId} ,the csv Data is invalid format or errored fields`);
+    logger.error(`Validate Question Stage:: ${processId} ,the question Data is empty,`);
     return {
-      error: { errStatus: 'error', errMsg: `The csv Data is invalid format or errored fields` },
+      error: { errStatus: 'error', errMsg: `the question Data is empty` },
       result: {
         isValid: false,
         data: null,
@@ -211,24 +201,25 @@ const validateStagedQuestionData = async () => {
     const { id, question_id, question_set_id, question_type, l1_skill, body } = question;
     const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type });
     if (checkRecord.error) {
-      logger.error(`Validate Question Stage:: ${processId} ,th unexpected error .`);
+      logger.error(`Validate Question Stage:: ${processId} ,${checkRecord.message}.`);
       return {
-        error: { errStatus: 'error', errMsg: ` The csv Data is invalid format or errored fields` },
+        error: { errStatus: 'error', errMsg: `unexpected error ,${checkRecord.message}` },
         result: {
           isValid: false,
         },
       };
     }
     if (checkRecord.length > 1) {
+      logger.error(`Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`);
       await updateQuestionStage(
         { id },
         {
           status: 'errored',
-          error_info: 'Duplicate question and question_set_id combination found.',
+          error_info: `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`,
         },
       );
       errStatus = 'errored';
-      errMsg = `Duplicate question and question_set_id combination found.`;
+      errMsg = `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`;
       isUnique = false;
     }
     let requiredFields: string[] = [];
@@ -260,6 +251,7 @@ const validateStagedQuestionData = async () => {
         break;
     }
     if (!requiredFields.map((field) => body[field] !== undefined && body[field] !== null)) {
+      logger.error(`Missing required data for type ${question_type},fields are  ${requiredFields.join(', ')}`);
       await updateQuestionStage(
         { id },
         {
@@ -347,10 +339,7 @@ const processQuestionMediaFiles = async () => {
             return null;
           }),
         );
-        if (mediaFiles.every((file: any) => file === null)) {
-          logger.warn(`No valid media files found for question ID: ${question.id}`);
-          continue;
-        }
+        if (mediaFiles.every((file: any) => file === null)) continue;
 
         const validMediaFiles = mediaFiles.filter((file) => file !== null);
         if (validMediaFiles.length === 0) {
@@ -371,7 +360,6 @@ const processQuestionMediaFiles = async () => {
     }
 
     logger.info('Question Media upload::inserted and updated in the process data');
-    logger.info(`Bulk Insert::${processId} is Ready for inserting bulk upload to question table`);
     return {
       error: { errStatus: null, errMsg: null },
       result: {
@@ -393,16 +381,7 @@ const processQuestionMediaFiles = async () => {
 
 const insertMainQuestions = async () => {
   const insertToMainQuestion = await migrateToMainQuestion();
-  if (!insertToMainQuestion.result.isValid) {
-    logger.error(`Question Bulk Insert:: ${processId} staging data are invalid for main question insert`);
-    return {
-      error: { errStatus: 'main_insert_error', errMsg: `Bulk Insert staging data are invalid to format main question insert` },
-      result: {
-        isValid: false,
-        data: null,
-      },
-    };
-  }
+  if (!insertToMainQuestion.result.isValid) return insertToMainQuestion;
 
   logger.info(`Question Bulk insert:: bulk upload completed  for Process ID: ${processId}`);
   await QuestionStage.truncate({ restartIdentity: true });
@@ -419,9 +398,9 @@ const insertMainQuestions = async () => {
 export const migrateToMainQuestion = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
   if (getAllQuestionStage.error) {
-    logger.error(`Validate Question Stage:: ${processId} ,th unexpected error .`);
+    logger.error(`Validate Question Stage:: ${processId} ,${getAllQuestionStage.message}.`);
     return {
-      error: { errStatus: 'errored', errMsg: 'question bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: getAllQuestionStage.message },
       result: {
         isValid: false,
         data: null,
@@ -440,9 +419,9 @@ export const migrateToMainQuestion = async () => {
   }
   const questionInsert = await createQuestion(insertData);
   if (questionInsert.error) {
-    logger.error(`Insert Question main:: ${processId} question bulk data error in inserting to main table`);
+    logger.error(`Insert Question main:: ${processId} question bulk data error in inserting to main table,${questionInsert.message}`);
     return {
-      error: { errStatus: 'errored', errMsg: 'Question bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: questionInsert.message },
       result: {
         isValid: false,
         data: null,

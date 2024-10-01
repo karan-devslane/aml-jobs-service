@@ -27,25 +27,14 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
 
   for (const questionSet of questionSetsCsv) {
     const validatedQuestionSetHeader = await validateCSVQuestionSetHeaderRow(questionSet);
-    if (!validatedQuestionSetHeader.result.isValid) {
-      logger.error('error while progressing data');
-      return validatedQuestionSetHeader;
-    }
+    if (!validatedQuestionSetHeader.result.isValid) return validatedQuestionSetHeader;
+
     const {
       result: { data },
     } = validatedQuestionSetHeader;
 
     const validatedRowData = processQuestionSetRows(data?.rows, data?.header);
-    if (!validatedRowData.result.isValid) {
-      logger.error('error while processing data');
-      return {
-        error: { errStatus: 'in valid row', errMsg: 'in valid row are header found for question' },
-        result: {
-          isValid: false,
-          data: null,
-        },
-      };
-    }
+    if (!validatedRowData.result.isValid) return validatedRowData;
     const { result } = validatedRowData;
 
     questionSetsData = questionSetsData.concat(result.data);
@@ -63,10 +52,7 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
 
   logger.info('Insert question Set Stage::Questions set Data ready for bulk insert');
   const createQuestionSetsStage = await bulkInsertQuestionSetStage(questionSetsData);
-  if (!createQuestionSetsStage.result.isValid) {
-    logger.error('Error while creating stage question table');
-    return createQuestionSetsStage;
-  }
+  if (!createQuestionSetsStage.result.isValid) return createQuestionSetsStage;
 
   const validateQuestionSets = await validateQuestionSetsStage();
   if (!validateQuestionSets.result.isValid) {
@@ -95,14 +81,8 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
   }
   const questionSetRowHeader = getCSVHeaderAndRow(questionSetEntry);
   if (!questionSetRowHeader.result.isValid) {
-    logger.error('Question Set Row/header:: Template header, header, or rows are missing');
-    return {
-      error: { errStatus: 'Missing row/header', errMsg: 'Question Row/header::Template header, or rows are missing' },
-      result: {
-        isValid: false,
-        data: null,
-      },
-    };
+    logger.error(`Question Set Row/header:: Template header, header, or rows are missing for  ${questionSetEntry.entryName}`);
+    return questionSetRowHeader;
   }
 
   const {
@@ -151,9 +131,9 @@ const processQuestionSetRows = (rows: any, header: any) => {
 const bulkInsertQuestionSetStage = async (insertData: object[]) => {
   const questionSetStage = await createQuestionSetStage(insertData);
   if (questionSetStage.error) {
-    logger.error(`Insert Question SetStaging:: ${processId} question set  bulk data error in inserting`);
+    logger.error(`Insert Question SetStaging:: ${processId} question set  bulk data error in inserting ,${questionSetStage.message}`);
     return {
-      error: { errStatus: 'errored', errMsg: 'question set bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting,${questionSetStage.message}` },
       result: {
         isValid: false,
         data: null,
@@ -175,9 +155,9 @@ const validateQuestionSetsStage = async () => {
   const validateMetadata = await checkValidity(getAllQuestionSetStage);
   if (!validateMetadata.result.isValid) return validateMetadata;
   if (getAllQuestionSetStage.error) {
-    logger.error(`Validate Question Set Stage:: ${processId} unexpected error  .`);
+    logger.error(`Validate Question Set Stage:: ${processId} unexpected error ,${getAllQuestionSetStage.message}.`);
     return {
-      error: { errStatus: 'error', errMsg: `question Set Stage data  unexpected error .` },
+      error: { errStatus: 'error', errMsg: `question Set Stage data  unexpected error ,${getAllQuestionSetStage.message}.` },
       result: {
         isValid: false,
         data: null,
@@ -199,9 +179,9 @@ const validateQuestionSetsStage = async () => {
     const { id, question_set_id, l1_skill } = questionSet;
     const checkRecord = await questionSetStageMetaData({ question_set_id, l1_skill });
     if (checkRecord.error) {
-      logger.error(`Validate Question Set Stage:: ${processId} ,unexpected error .`);
+      logger.error(`Validate Question Set Stage:: ${processId} ,${checkRecord.message}.`);
       return {
-        error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error .` },
+        error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error,${checkRecord.message} .` },
         result: {
           isValid: false,
           data: null,
@@ -213,7 +193,7 @@ const validateQuestionSetsStage = async () => {
         { id },
         {
           status: 'errored',
-          error_info: 'Duplicate question_set_id found.',
+          error_info: `Duplicate question_set_id found as ${question_set_id} for ${l1_skill}`,
         },
       );
 
@@ -285,9 +265,9 @@ const insertMainQuestionSets = async () => {
 export const migrateToMainQuestionSet = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
   if (getAllQuestionSetStage.error) {
-    logger.error(`Insert Question set main:: ${processId} ,the unexpected error .`);
+    logger.error(`Insert Question set main:: ${processId} ,${getAllQuestionSetStage.message} .`);
     return {
-      error: { errStatus: 'errored', errMsg: 'question set bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: getAllQuestionSetStage.message },
       result: {
         isValid: false,
         data: null,
@@ -306,9 +286,9 @@ export const migrateToMainQuestionSet = async () => {
   }
   const insertedQuestionSets = await createQuestionSet(insertData);
   if (insertedQuestionSets.error) {
-    logger.error(`Insert Question set main:: ${processId} question set data error in inserting to main table`);
+    logger.error(`Insert Question set main:: ${processId} question set data error in inserting to main table ,${insertedQuestionSets.message}`);
     return {
-      error: { errStatus: 'errored', errMsg: ' question set bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting ,${insertedQuestionSets.message}` },
       result: {
         isValid: false,
         data: null,

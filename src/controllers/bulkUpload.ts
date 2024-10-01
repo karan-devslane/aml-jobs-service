@@ -184,7 +184,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
   }
   const fileExt = path.extname(bulkUploadMetadata[0].Key || '').toLowerCase();
   if (fileExt !== '.zip') {
-    logger.error(`Zip Format:: ${processId} Unsupported file format, please upload a ZIP file.`);
+    logger.error(`Zip Format::For ${processId} the ${bulkUploadMetadata[0].Key} Unsupported file format, please upload a ZIP file.`);
     return {
       error: { errStatus: 'unsupported_format', errMsg: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.' },
       result: { isValidZip: false, data: null },
@@ -206,20 +206,21 @@ const validateCSVFilesFormatInZip = async () => {
         result: { isValid: false, data: [] },
       };
     }
-    logger.info('Zip extract:: Filtering ZIP entries from media entries.');
+    logger.info('Zip extract:: Filtering media entries from csv entries.');
     mediaEntries = zipEntries?.result?.data?.filter((zipEntry: any) => !zipEntry.entryName.endsWith('.csv'));
+    logger.info('Zip extract:: Filtering csv entries from media entries.');
     const csvEntries = zipEntries?.result?.data?.filter((zipEntry: any) => zipEntry.entryName.endsWith('.csv'));
 
     for (const entry of csvEntries) {
       if (entry.isDirectory && entry.entryName.includes('.csv')) {
-        logger.error(`File Format:: ${processId} The uploaded ZIP folder file format is in valid`);
+        logger.error(`File Format::For ${processId} The uploaded ${entry.entryName} ZIP folder file format is in valid`);
         return {
           error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded '${entry.entryName}' ZIP folder file format is invalid` },
           result: { isValid: false, data: [] },
         };
       }
       if (!csvFileName.includes(entry.entryName)) {
-        logger.error(`File Format:: ${processId} The uploaded file '${entry.entryName}' is not a valid file name.`);
+        logger.error(`File Format::For ${processId} The uploaded file '${entry.entryName}' is not a valid file name.`);
         return {
           error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded file '${entry.entryName}' is not a valid file name.` },
           result: { isValid: false, data: [] },

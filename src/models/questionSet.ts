@@ -13,6 +13,10 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    process_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
     title: {
       type: DataTypes.JSONB,
       allowNull: false,

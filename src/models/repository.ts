@@ -17,6 +17,10 @@ export const Repository = AppDataSource.define(
       type: DataTypes.JSONB,
       allowNull: false,
     },
+    description: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
     tenant_id: {
       type: DataTypes.ARRAY(DataTypes.INTEGER),
       allowNull: true,

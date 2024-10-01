@@ -15,7 +15,7 @@ export const Content = AppDataSource.define(
     },
     process_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     name: {
       type: DataTypes.JSONB,
