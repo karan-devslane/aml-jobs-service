@@ -483,10 +483,10 @@ const formatQuestionStageData = async (stageData: any[]) => {
       sub_skill_x0 = null,
     } = obj.body || {};
 
-    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { id: null };
+    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { identifier: null };
     const transferData = {
       identifier: uuid.v4(),
-      question_set_id: questionSetId.id,
+      question_set_id: questionSetId.identifier,
       question_type: obj.question_type,
       operation: obj.l1_skill,
       hints: obj.hint,
