@@ -314,7 +314,7 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
     const transferData = {
       identifier: uuid.v4(),
       question_set_id: obj.question_set_id,
-      content_id: contentId?.id ?? null,
+      content_id: contentId?.identifier ?? null,
       instruction_text: obj.instruction_text ?? '',
       sequence: obj.sequence,
       title: { en: obj.title || obj.question_text },

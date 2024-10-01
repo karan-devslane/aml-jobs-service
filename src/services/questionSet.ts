@@ -21,7 +21,7 @@ export const createQuestionSet = async (insertData: Array<Record<string, any>>):
 export const getQuestionSets = async (): Promise<any> => {
   try {
     const questionSets = await QuestionSet.findAll({
-      attributes: ['id', 'question_set_id', [Sequelize.literal(`taxonomy->'l1_skill'->'name'->'en'`), 'l1_skill']],
+      attributes: ['id', 'identifier', 'question_set_id', [Sequelize.literal(`taxonomy->'l1_skill'->'name'->'en'`), 'l1_skill']],
       raw: true,
     });
     return questionSets;

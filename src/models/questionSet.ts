@@ -63,7 +63,7 @@ export const QuestionSet = AppDataSource.define(
       allowNull: true,
     },
     content_id: {
-      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },
     instruction_text: {
