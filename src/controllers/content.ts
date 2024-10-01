@@ -161,9 +161,9 @@ const validateStagedContentData = async () => {
   if (!validateMetadata.result.isValid) return validateMetadata;
   let isValid = true;
   if (getAllContentStage.error) {
-    logger.error(`Validate Content Stage:: ${processId} ,the csv Data is invalid format or errored fields, ${getAllContentStage.message}`);
+    logger.error(`Validate Content Stage:: ${processId} ,the get all Data is invalid format or errored fields`);
     return {
-      error: { errStatus: 'error', errMsg: getAllContentStage.message },
+      error: { errStatus: 'error', errMsg: 'unexceptional error occurred while get all stage data' },
       result: {
         isValid: false,
         data: null,
@@ -333,9 +333,9 @@ const insertMainContents = async () => {
 export const migrateToMainContent = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: processId });
   if (getAllContentStage.error) {
-    logger.error(`Insert Content main:: ${processId} content bulk data error while get all stage data.${getAllContentStage.message}`);
+    logger.error(`Insert Content main:: ${processId} content bulk data error while get all stage data`);
     return {
-      error: { errStatus: 'errored', errMsg: getAllContentStage.message },
+      error: { errStatus: 'errored', errMsg: `Content bulk data error while get all stage data` },
       result: {
         isValid: false,
         data: null,
@@ -354,9 +354,9 @@ export const migrateToMainContent = async () => {
   }
   const contentInsert = await createContent(insertData);
   if (contentInsert.error) {
-    logger.error(`Insert Content main:: ${processId} content bulk data error in inserting to main table ${contentInsert.message}`);
+    logger.error(`Insert Content main:: ${processId} content bulk data error in inserting to main table`);
     return {
-      error: { errStatus: 'errored', errMsg: contentInsert.message },
+      error: { errStatus: 'errored', errMsg: 'content bulk data error in inserting to main table' },
       result: {
         isValid: false,
         data: null,

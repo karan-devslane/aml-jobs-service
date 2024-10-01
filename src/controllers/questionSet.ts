@@ -155,9 +155,9 @@ const validateQuestionSetsStage = async () => {
   const validateMetadata = await checkValidity(getAllQuestionSetStage);
   if (!validateMetadata.result.isValid) return validateMetadata;
   if (getAllQuestionSetStage.error) {
-    logger.error(`Validate Question Set Stage:: ${processId} unexpected error ,${getAllQuestionSetStage.message}.`);
+    logger.error(`Validate Question Set Stage:: ${processId} unexpected error.`);
     return {
-      error: { errStatus: 'error', errMsg: `question Set Stage data  unexpected error ,${getAllQuestionSetStage.message}.` },
+      error: { errStatus: 'error', errMsg: `question Set Stage data  unexpected error.` },
       result: {
         isValid: false,
         data: null,
@@ -179,9 +179,9 @@ const validateQuestionSetsStage = async () => {
     const { id, question_set_id, l1_skill } = questionSet;
     const checkRecord = await questionSetStageMetaData({ question_set_id, l1_skill });
     if (checkRecord.error) {
-      logger.error(`Validate Question Set Stage:: ${processId} ,${checkRecord.message}.`);
+      logger.error(`Validate Question Set Stage:: ${processId}.`);
       return {
-        error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error,${checkRecord.message} .` },
+        error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error.` },
         result: {
           isValid: false,
           data: null,
@@ -265,9 +265,9 @@ const insertMainQuestionSets = async () => {
 export const migrateToMainQuestionSet = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
   if (getAllQuestionSetStage.error) {
-    logger.error(`Insert Question set main:: ${processId} ,${getAllQuestionSetStage.message} .`);
+    logger.error(`Insert Question set main:: ${processId}.`);
     return {
-      error: { errStatus: 'errored', errMsg: getAllQuestionSetStage.message },
+      error: { errStatus: 'errored', errMsg: 'error in question set insert to main table ' },
       result: {
         isValid: false,
         data: null,
@@ -286,9 +286,9 @@ export const migrateToMainQuestionSet = async () => {
   }
   const insertedQuestionSets = await createQuestionSet(insertData);
   if (insertedQuestionSets.error) {
-    logger.error(`Insert Question set main:: ${processId} question set data error in inserting to main table ,${insertedQuestionSets.message}`);
+    logger.error(`Insert Question set main:: ${processId} question set data error in inserting to main table .`);
     return {
-      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting ,${insertedQuestionSets.message}` },
+      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting .` },
       result: {
         isValid: false,
         data: null,

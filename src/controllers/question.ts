@@ -174,9 +174,9 @@ const validateStagedQuestionData = async () => {
   const validateMetadata = await checkValidity(getAllQuestionStage);
   if (!validateMetadata.result.isValid) return validateMetadata;
   if (getAllQuestionStage.error) {
-    logger.error(`Validate Question Stage:: ${processId} , ${getAllQuestionStage.message}.`);
+    logger.error(`Validate Question Stage:: ${processId}.`);
     return {
-      error: { errStatus: 'error', errMsg: `Validate Question Stage:: ${processId} , ${getAllQuestionStage.message}.` },
+      error: { errStatus: 'error', errMsg: `Validate Question Stage:: ${processId}.` },
       result: {
         isValid: false,
         data: null,
@@ -398,9 +398,9 @@ const insertMainQuestions = async () => {
 export const migrateToMainQuestion = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
   if (getAllQuestionStage.error) {
-    logger.error(`Validate Question Stage:: ${processId} ,${getAllQuestionStage.message}.`);
+    logger.error(`Validate Question Stage:: ${processId}.`);
     return {
-      error: { errStatus: 'errored', errMsg: getAllQuestionStage.message },
+      error: { errStatus: 'errored', errMsg: 'error while get all stage data' },
       result: {
         isValid: false,
         data: null,
@@ -419,9 +419,9 @@ export const migrateToMainQuestion = async () => {
   }
   const questionInsert = await createQuestion(insertData);
   if (questionInsert.error) {
-    logger.error(`Insert Question main:: ${processId} question bulk data error in inserting to main table,${questionInsert.message}`);
+    logger.error(`Insert Question main:: ${processId} question bulk data error in inserting to main table.`);
     return {
-      error: { errStatus: 'errored', errMsg: questionInsert.message },
+      error: { errStatus: 'errored', errMsg: 'error while inserting staging data to question table' },
       result: {
         isValid: false,
         data: null,
