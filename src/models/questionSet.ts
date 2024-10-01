@@ -21,10 +21,6 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.JSONB,
       allowNull: true,
     },
-    question_set_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     repository: {
       type: DataTypes.JSONB,
       allowNull: false,

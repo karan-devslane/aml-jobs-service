@@ -507,7 +507,6 @@ const formatQuestionStageData = async (stageData: any[]) => {
     const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { id: null };
     const transferData = {
       identifier: uuid.v4(),
-      question_id: obj.question_id,
       question_set_id: questionSetId.id,
       question_type: obj.question_type,
       operation: obj.l1_skill,
@@ -526,7 +525,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
       },
       sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
       question_body: {
-        numbers: [grid_fib_n1, grid_fib_n2],
+        numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
         options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
         correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
         answers: getAnswer(obj.l1_skill, grid_fib_n1, grid_fib_n2, obj.question_type, obj.body, obj.question_type),
@@ -710,34 +709,51 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
   return { result: n1 * n2 };
 };
 
-const divideWithSteps = (dividend: number, divisor: number, type: string, prefillPattern?: string) => {
+const divideWithSteps = (dividend: number, divisor: number, type: string, prefillPattern: any) => {
   if (type === 'Grid-1') {
+    const { grid1_pre_fills_quotient, grid1_pre_fills_remainder, grid1_div_intermediate_steps_prefills } = prefillPattern;
+
     if (divisor === 0) {
       throw new Error('Division by zero is not allowed.');
     }
 
     const steps: string[] = [];
-    const quotient = Math.floor(dividend / divisor);
     let remainder = dividend;
-
+    const quotient = Math.floor(dividend / divisor);
+    let prefilledQuotient;
+    let prefilledRemainder;
+    // Perform step-by-step subtraction
     while (remainder >= divisor) {
-      const currentStep = Math.floor(remainder / divisor) * divisor;
-      steps.push(currentStep.toString());
-      remainder -= currentStep;
+      steps.push(divisor.toString());
+      remainder -= divisor;
     }
 
-    if (prefillPattern) {
+    if (grid1_pre_fills_quotient.includes('F')) {
+      prefilledQuotient = applyPrefillPattern(quotient.toString(), grid1_pre_fills_quotient);
+    }
+    if (grid1_pre_fills_remainder.includes('F')) {
+      prefilledRemainder = applyPrefillPattern(remainder.toString(), grid1_pre_fills_remainder);
+    }
+    if (grid1_div_intermediate_steps_prefills.includes('F')) {
       for (let i = 0; i < steps.length; i++) {
-        steps[i] = applyPrefillPattern(steps[i], prefillPattern);
+        steps[i] = applyPrefillPattern(steps[i], grid1_div_intermediate_steps_prefills);
       }
+
+      return {
+        steps: steps,
+        quotient: prefilledQuotient,
+        remainder: prefilledRemainder,
+      };
     }
 
     return {
       steps: steps,
-      quotient: quotient,
-      remainder: remainder,
+      quotient: quotient.toString(),
+      remainder: remainder.toString(),
     };
   }
+
+  // Fallback for other types
   return { answer: dividend / divisor };
 };
 
@@ -745,7 +761,7 @@ const applyPrefillPattern = (numStr: string, pattern: string) => {
   let result = '';
   const patternLength = pattern.length;
 
-  for (let i = 0; i < numStr.length; i++) {
+  for (let i = numStr.length - 1; i >= 0; i--) {
     if (i < patternLength) {
       const char = pattern[i] === 'B' ? 'B' : numStr[i];
       result += char;

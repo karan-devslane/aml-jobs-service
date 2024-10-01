@@ -17,10 +17,6 @@ export const Content = AppDataSource.define(
       type: DataTypes.UUID,
       allowNull: false,
     },
-    content_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     name: {
       type: DataTypes.JSONB,
       allowNull: false,

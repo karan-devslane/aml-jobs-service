@@ -13,10 +13,6 @@ export const Question = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    question_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     question_set_id: {
       type: DataTypes.STRING,
       allowNull: true,
