@@ -205,11 +205,11 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
     keys,
     (acc: any, key) => {
       if (key === 'l2_skill' || key === 'l3_skill' || key === 'sub_skills') {
-        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
+        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined && value !== '');
       } else {
         acc[key] = _.uniqBy(data, key)
           .map((item) => item[key])
-          .filter((value) => value !== undefined);
+          .filter((value) => value !== undefined && value !== '');
       }
       return acc;
     },

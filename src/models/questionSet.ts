@@ -9,6 +9,10 @@ export const QuestionSet = AppDataSource.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    question_set_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     identifier: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -27,7 +31,7 @@ export const QuestionSet = AppDataSource.define(
     },
     repository: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     sequence: {
       type: DataTypes.INTEGER,
