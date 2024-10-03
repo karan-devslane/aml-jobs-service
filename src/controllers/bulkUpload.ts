@@ -266,15 +266,15 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     logger.info(`Content Validate::csv Data validation initiated for contents`);
     const contentsCsv = await handleContentCsv(validCSVData.contents, mediaEntries, processId);
     if (!contentsCsv.result.isValid) {
-      logger.error('content:: Error in question csv validation');
+      logger.error(contentsCsv.error.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       return contentsCsv;
     }
 
     logger.info(`Question Set Validate::csv Data validation initiated for question sets`);
     const questionSetsCsv = await handleQuestionSetCsv(validCSVData.questionSets, processId);
-    if (!questionSetsCsv) {
-      logger.error('Question set:: Error in question set csv validation');
+    if (!questionSetsCsv.result.isValid) {
+      logger.error(questionSetsCsv.error.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       await QuestionSetStage.destroy({ where: { process_id: processId } });
       await Content.destroy({ where: { process_id: processId } });
@@ -284,7 +284,7 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     logger.info(`Question Validate::csv Data validation initiated for questions`);
     const questionsCsv = await handleQuestionCsv(validCSVData.questions, mediaEntries, processId);
     if (!questionsCsv.result.isValid) {
-      logger.error('Question:: Error in question csv validation');
+      logger.error(questionsCsv.error.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       await QuestionSetStage.destroy({ where: { process_id: processId } });
       await QuestionStage.destroy({ where: { process_id: processId } });
