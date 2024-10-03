@@ -223,6 +223,7 @@ const validateStagedQuestionData = async () => {
       isUnique = false;
     }
     let requiredFields: string[] = [];
+    let requiredData;
     const caseKey = question_type === 'Grid-1' ? `${question_type}_${l1_skill}` : question_type;
     switch (caseKey) {
       case `Grid-1_add`:
@@ -242,6 +243,7 @@ const validateStagedQuestionData = async () => {
         break;
       case `Mcq`:
         requiredFields = mcqFields;
+        requiredData = 'question_text,mcq_question_image,mcq_option_1,mcq_option_2,mcq_option_3,mcq_option_4,mcq_option_5,mcq_option_6,mcq_correct_options';
         break;
       case `Fib`:
         requiredFields = fibFields;
@@ -251,7 +253,7 @@ const validateStagedQuestionData = async () => {
         break;
     }
     if (!requiredFields.map((field) => body[field] !== undefined && body[field] !== null)) {
-      const requiredData = JSON.stringify(requiredFields.join(','));
+      requiredData = 'grid_fib_n1,grid_fib_n2';
       await updateQuestionStage(
         { id },
         {
