@@ -251,7 +251,7 @@ const validateStagedQuestionData = async () => {
         break;
     }
     if (!requiredFields.map((field) => body[field] !== undefined && body[field] !== null)) {
-      const requiredData = requiredFields.join(',');
+      const requiredData = JSON.stringify(requiredFields.join(','));
       await updateQuestionStage(
         { id },
         {
