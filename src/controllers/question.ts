@@ -251,15 +251,16 @@ const validateStagedQuestionData = async () => {
         break;
     }
     if (!requiredFields.map((field) => body[field] !== undefined && body[field] !== null)) {
+      const requiredData = requiredFields.join(',');
       await updateQuestionStage(
         { id },
         {
           status: 'errored',
-          error_info: `Missing required data for type ${question_type},fields are  ${requiredFields.join(',')}`,
+          error_info: `Missing required data for type ${question_type},fields are ${requiredData}`,
         },
       );
       errStatus = 'errored';
-      errMsg = `Missing required data for type ${question_type},fields are  ${requiredFields.join(',')}`;
+      errMsg = `Missing required data for type ${question_type},fields are ${requiredData}`;
       isValid = false;
     }
   }
