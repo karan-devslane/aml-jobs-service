@@ -51,7 +51,7 @@ export const Content = AppDataSource.define(
     },
     media: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     created_by: {
       type: DataTypes.STRING,
