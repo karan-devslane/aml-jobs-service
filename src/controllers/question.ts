@@ -691,6 +691,13 @@ const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPatt
 };
 
 const divideWithSteps = (dividend: number, divisor: number, type: string, prefillPattern: any) => {
+  const strDividend = dividend.toString();
+  let quotient = '';
+  let remainder = 0;
+  let intermediateSteps = '';
+  let prefilledQuotient;
+  let prefilledRemainder;
+
   if (type === 'Grid-1') {
     const { grid1_pre_fills_quotient, grid1_pre_fills_remainder, grid1_div_intermediate_steps_prefills } = prefillPattern;
 
@@ -698,44 +705,35 @@ const divideWithSteps = (dividend: number, divisor: number, type: string, prefil
       throw new Error('Division by zero is not allowed.');
     }
 
-    const steps: string[] = [];
-    let remainder = dividend;
-    const quotient = Math.floor(dividend / divisor);
-    let prefilledQuotient;
-    let prefilledRemainder;
-    // Perform step-by-step subtraction
-    while (remainder >= divisor) {
-      steps.push(divisor.toString());
-      remainder -= divisor;
+    for (let i = 0; i < strDividend.length; i++) {
+      const currentDigit = +strDividend[i];
+      const currentNumber = remainder * 10 + currentDigit;
+      const currentQuotient = Math.floor(currentNumber / divisor);
+      remainder = currentNumber % divisor;
+      quotient += currentQuotient;
+      intermediateSteps += currentNumber;
     }
-
-    if (grid1_pre_fills_quotient.includes('F')) {
-      prefilledQuotient = applyPrefillPattern(quotient.toString(), grid1_pre_fills_quotient);
-    }
-    if (grid1_pre_fills_remainder.includes('F')) {
-      prefilledRemainder = applyPrefillPattern(remainder.toString(), grid1_pre_fills_remainder);
-    }
-    if (grid1_div_intermediate_steps_prefills.includes('F')) {
-      for (let i = 0; i < steps.length; i++) {
-        steps[i] = applyPrefillPattern(steps[i], grid1_div_intermediate_steps_prefills);
+    quotient = quotient.replace(/^0+/, '') || '0';
+    if (grid1_pre_fills_quotient || grid1_pre_fills_remainder || grid1_div_intermediate_steps_prefills) {
+      if (grid1_pre_fills_quotient.includes('F')) {
+        prefilledQuotient = applyPrefillPattern(quotient.toString(), grid1_pre_fills_quotient);
+        quotient = prefilledQuotient;
       }
-
-      return {
-        steps: steps,
-        quotient: prefilledQuotient,
-        remainder: prefilledRemainder,
-      };
+      if (grid1_pre_fills_remainder.includes('F')) {
+        prefilledRemainder = applyPrefillPattern(remainder.toString(), grid1_pre_fills_remainder);
+        remainder = parseInt(prefilledRemainder);
+      }
+      if (grid1_div_intermediate_steps_prefills.includes('F')) {
+        intermediateSteps = applyPrefillPattern(intermediateSteps, grid1_div_intermediate_steps_prefills);
+      }
     }
 
     return {
-      steps: steps,
-      quotient: quotient.toString(),
-      remainder: remainder.toString(),
+      quotient: quotient,
+      remainder: remainder,
+      intermediateSteps: intermediateSteps,
     };
   }
-
-  // Fallback for other types
-  return { answer: dividend / divisor };
 };
 
 const applyPrefillPattern = (numStr: string, pattern: string) => {
