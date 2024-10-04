@@ -20,7 +20,7 @@ export const createContent = async (insertData: Array<Record<string, any>>): Pro
 export const getContents = async (): Promise<any> => {
   try {
     const contents = await Content.findAll({
-      attributes: ['id', 'content_id'],
+      attributes: ['id', 'content_id', 'identifier'],
       raw: true,
     });
     return contents;

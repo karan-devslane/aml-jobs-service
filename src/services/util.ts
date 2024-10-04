@@ -54,8 +54,8 @@ export const streamToBuffer = (stream: any) => {
 
 export const getCSVTemplateHeader = async (entryName: string) => {
   const templateZipEntries = await fetchAndExtractZipEntries('template', processId);
-  const templateFileContent = templateZipEntries.result.data
-    .find((t) => t.entryName === entryName)
+  const templateFileContent = templateZipEntries?.result?.data
+    .find((t) => t?.entryName === entryName)
     ?.getData()
     .toString('utf8');
   if (!templateFileContent) {
@@ -69,7 +69,7 @@ export const getCSVTemplateHeader = async (entryName: string) => {
     };
   }
   const [templateHeader] = templateFileContent.split('\n').map((row) => row.split(','));
-  const cleanHeader = templateHeader.map((cell: string) => cell.replace(/\r/g, '').trim());
+  const cleanHeader = templateHeader?.map((cell: string) => cell.replace(/\r/g, '').trim());
   logger.info('Template:: template header extracted.');
   return {
     error: { errStatus: null, errMsg: null },
@@ -81,26 +81,37 @@ export const getCSVTemplateHeader = async (entryName: string) => {
 };
 
 export const getCSVHeaderAndRow = (csvEntries: any) => {
-  const [header, ...rows] = csvEntries
-    .getData()
-    .toString('utf8')
-    .split('\n')
-    .map((row: string) => row.split(','))
-    .filter((row: string[]) => row.some((cell) => cell.trim() !== ''));
-  logger.info('Row/Header:: header and rows are extracted');
-  const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
-  const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
-  return {
-    error: { errStatus: null, errMsg: null },
-    result: {
-      isValid: true,
-      data: { header: cleanHeader, rows: cleanRows },
-    },
-  };
+  try {
+    const [header, ...rows] = csvEntries
+      .getData()
+      .toString('utf8')
+      .split('\n')
+      .map((row: string) => row?.split(','))
+      .filter((row: string[]) => row?.some((cell) => cell.trim() !== ''));
+    logger.info('Row/Header:: header and rows are extracted');
+    const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
+    const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
+    return {
+      error: { errStatus: null, errMsg: null },
+      result: {
+        isValid: true,
+        data: { header: cleanHeader, rows: cleanRows },
+      },
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Error while accessing the row and header';
+    return {
+      error: { errStatus: 'Unexpected error', errMsg: errorMsg },
+      result: {
+        isValid: true,
+        data: { header: '', rows: '' },
+      },
+    };
+  }
 };
 
 export const validateHeader = (entryName: string, header: any, templateHeader: any) => {
-  if (header.length !== templateHeader.length) {
+  if (header?.length !== templateHeader?.length) {
     logger.error(`Header Validate:: CSV file contains more/less fields compared to the template.`);
     return {
       error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not matched with header length.` },
@@ -111,11 +122,18 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
     };
   }
 
-  const validHeader = templateHeader.every((col: any, i: number) => col === header[i]);
+  const mismatchedColumns: string[] = [];
+  const validHeader = templateHeader?.every((col: string, i: number) => {
+    if (col !== header[i]) {
+      mismatchedColumns.push(`Expected: '${col}', Found: '${header[i]}'`);
+      return false;
+    }
+    return true;
+  });
   if (!validHeader) {
-    logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format.`);
+    logger.error(`Header validate:: The file '${entryName}' does not match the expected CSV format. Mismatched columns: ${mismatchedColumns.join(', ')}`);
     return {
-      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column name ` },
+      error: { errStatus: 'Header validate', errMsg: `The file '${entryName}' does not match the exact column names. Mismatched columns: ${mismatchedColumns.join(', ')}` },
       result: {
         isValid: false,
         data: null,
@@ -137,36 +155,40 @@ export const processRow = (rows: string[][], header: string[]) => {
     row.reduce(
       (acc, cell, index) => {
         const headerName = header[index].replace(/\r/g, '');
-        const cellValue = cell.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
-        if (headerName.includes('grid1_show_carry')) {
+        const cellValue = cell?.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
+        if (headerName?.includes('grid1_show_carry')) {
           acc[headerName] = cellValue === undefined ? 'no' : cellValue;
         }
-        if (headerName.includes('grid1_show_regroup')) {
+        if (headerName?.includes('grid1_show_regroup')) {
           acc[headerName] = cellValue === undefined ? 'no' : cellValue;
         }
-        if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
+        if (headerName?.startsWith('mcq') || headerName?.startsWith('fib') || headerName?.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
           acc.body = acc.body || {};
           acc.body[headerName] = cellValue;
-        } else if (headerName.includes('l2_skill') || headerName.includes('l3_skill') || headerName.includes('sub_skill')) {
+        } else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill') || headerName?.includes('sub_skill')) {
           acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
-        } else if (headerName.includes('media')) {
+        } else if (headerName?.includes('media')) {
           acc.media_files = acc.media_files || [];
           if (cellValue) acc.media_files.push(cellValue);
-        } else if (headerName.includes('QSID')) {
+        } else if (headerName?.includes('QSID')) {
           acc['question_set_id'] = cellValue;
-        } else if (headerName.includes('QID')) {
+        } else if (headerName?.includes('QID')) {
           acc['question_id'] = cellValue;
-        } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
+        } else if (headerName?.includes('sequence') || headerName.includes('benchmark_time')) {
           acc[headerName] = Number(cellValue);
-        } else if (headerName.includes('x+x')) {
-          acc['sub_skill_xx'] = cellValue;
-        } else if (headerName.includes('x+0')) {
-          acc['sub_skill_x0'] = cellValue;
-        } else if (headerName.includes('is_atomic')) {
+        } else if (headerName?.includes('x_plus_x')) {
+          acc['sub_skill_x_plus_x'] = cellValue;
+        } else if (headerName?.includes('x_plus_0')) {
+          acc['sub_skill_x_plus_0'] = cellValue;
+        } else if (headerName?.includes('procedural')) {
+          acc['sub_skill_procedural'] = cellValue;
+        } else if (headerName?.includes('carry')) {
+          acc['sub_skill_carry'] = cellValue;
+        } else if (headerName?.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
-        } else if (headerName.includes('instruction_media')) {
+        } else if (headerName?.includes('instruction_media')) {
           acc['instruction_media'] = typeof cellValue === 'string' ? [cellValue] : cellValue;
-        } else if (headerName.includes('instruction_text')) {
+        } else if (headerName?.includes('instruction_text')) {
           acc['instruction_text'] = cellValue;
         } else {
           acc[headerName] = cellValue;
@@ -187,11 +209,11 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
     keys,
     (acc: any, key) => {
       if (key === 'l2_skill' || key === 'l3_skill' || key === 'sub_skills') {
-        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined);
+        acc[key] = _.uniq(_.flatten(data.map((item) => item[key] || []))).filter((value) => value !== undefined && value !== '');
       } else {
         acc[key] = _.uniqBy(data, key)
           .map((item) => item[key])
-          .filter((value) => value !== undefined);
+          .filter((value) => value !== undefined && value !== '');
       }
       return acc;
     },
@@ -199,47 +221,52 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
   ) as UniqueValues;
 };
 
-export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: UniqueValues | null } }> => {
+export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: any } }> => {
   const uniqueValues: UniqueValues = getUniqueValues(data);
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
 
   const mismatches: Mismatches = {
     boards: _.difference(
       uniqueValues.board,
-      boards.flatMap((board: Board) => board.name.en),
+      boards.flatMap((board: Board) => board?.name?.en),
     ),
     classes: _.difference(
       uniqueValues.class,
-      classes.flatMap((Class: Class) => Class.name.en),
+      classes.flatMap((Class: Class) => Class?.name?.en),
     ),
     repository: _.difference(
       uniqueValues.repository || [],
-      repositories.flatMap((repo: Board) => repo.name.en),
+      repositories.flatMap((repo: Board) => repo?.name?.en),
     ),
     l1_skill: _.difference(
       uniqueValues.l1_skill,
-      skills.filter((skill: Skill) => skill.type === 'l1_skill').map((skill: Skill) => skill.name.en),
+      skills.filter((skill: Skill) => skill.type === 'l1_skill').map((skill: Skill) => skill?.name?.en),
     ),
     l2_skill: _.difference(
       uniqueValues.l2_skill,
-      skills.filter((skill: Skill) => skill.type === 'l2_skill').map((skill: Skill) => skill.name.en),
+      skills.filter((skill: Skill) => skill.type === 'l2_skill').map((skill: Skill) => skill?.name?.en),
     ),
     l3_skill: _.difference(
       _.flatMap(uniqueValues.l3_skill),
-      skills.filter((skill: Skill) => skill.type === 'l3_skill').map((skill: Skill) => skill.name.en),
+      skills.filter((skill: Skill) => skill.type === 'l3_skill').map((skill: Skill) => skill?.name?.en),
     ),
     sub_skills: _.difference(
       uniqueValues.sub_skills,
-      subSkills.flatMap((Sub_skill: SubSkill) => Sub_skill.name.en),
+      subSkills.flatMap((Sub_skill: SubSkill) => Sub_skill?.name?.en),
     ),
   };
 
   const hasMismatch = _.some(_.values(mismatches), (arr) => arr.length > 0);
 
   if (hasMismatch) {
+    const mismatchedFields = Object.entries(mismatches)
+      .filter(([, mismatchArray]) => mismatchArray.length > 0)
+      .map(([field, mismatchedArray]) => `${field}: ${mismatchedArray.join(', ')}`)
+      .join('; ');
+    logger.error(`One or more values do not match the preloaded data.${mismatchedFields}`);
     return {
-      error: { errStatus: 'Mismatch', errMsg: 'One or more values do not match the preloaded data' },
-      result: { isValid: false, data: null },
+      error: { errStatus: 'Mismatch', errMsg: `One or more values do not match the preloaded data.${mismatchedFields}` },
+      result: { isValid: false, data: [mismatchedFields] },
     };
   }
 

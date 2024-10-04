@@ -184,7 +184,7 @@ const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
   }
   const fileExt = path.extname(bulkUploadMetadata[0].Key || '').toLowerCase();
   if (fileExt !== '.zip') {
-    logger.error(`Zip Format:: ${processId} Unsupported file format, please upload a ZIP file.`);
+    logger.error(`Zip Format::For ${processId} the ${bulkUploadMetadata[0].Key} Unsupported file format, please upload a ZIP file.`);
     return {
       error: { errStatus: 'unsupported_format', errMsg: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.' },
       result: { isValidZip: false, data: null },
@@ -206,20 +206,21 @@ const validateCSVFilesFormatInZip = async () => {
         result: { isValid: false, data: [] },
       };
     }
-    logger.info('Zip extract:: Filtering ZIP entries from media entries.');
+    logger.info('Zip extract:: Filtering media entries from csv entries.');
     mediaEntries = zipEntries?.result?.data?.filter((zipEntry: any) => !zipEntry.entryName.endsWith('.csv'));
+    logger.info('Zip extract:: Filtering csv entries from media entries.');
     const csvEntries = zipEntries?.result?.data?.filter((zipEntry: any) => zipEntry.entryName.endsWith('.csv'));
 
     for (const entry of csvEntries) {
       if (entry.isDirectory && entry.entryName.includes('.csv')) {
-        logger.error(`File Format:: ${processId} The uploaded ZIP folder file format is in valid`);
+        logger.error(`File Format::For ${processId} The uploaded ${entry.entryName} ZIP folder file format is in valid`);
         return {
           error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded '${entry.entryName}' ZIP folder file format is invalid` },
           result: { isValid: false, data: [] },
         };
       }
       if (!csvFileName.includes(entry.entryName)) {
-        logger.error(`File Format:: ${processId} The uploaded file '${entry.entryName}' is not a valid file name.`);
+        logger.error(`File Format::For ${processId} The uploaded file '${entry.entryName}' is not a valid file name.`);
         return {
           error: { errStatus: 'unsupported_folder_type', errMsg: `The uploaded file '${entry.entryName}' is not a valid file name.` },
           result: { isValid: false, data: [] },
@@ -264,16 +265,16 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     }
     logger.info(`Content Validate::csv Data validation initiated for contents`);
     const contentsCsv = await handleContentCsv(validCSVData.contents, mediaEntries, processId);
-    if (!contentsCsv.result.isValid) {
-      logger.error('content:: Error in question csv validation');
+    if (!contentsCsv?.result?.isValid) {
+      logger.error(contentsCsv?.error?.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       return contentsCsv;
     }
 
     logger.info(`Question Set Validate::csv Data validation initiated for question sets`);
     const questionSetsCsv = await handleQuestionSetCsv(validCSVData.questionSets, processId);
-    if (!questionSetsCsv) {
-      logger.error('Question set:: Error in question set csv validation');
+    if (!questionSetsCsv?.result?.isValid) {
+      logger.error(questionSetsCsv?.error?.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       await QuestionSetStage.destroy({ where: { process_id: processId } });
       await Content.destroy({ where: { process_id: processId } });
@@ -282,8 +283,8 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
 
     logger.info(`Question Validate::csv Data validation initiated for questions`);
     const questionsCsv = await handleQuestionCsv(validCSVData.questions, mediaEntries, processId);
-    if (!questionsCsv.result.isValid) {
-      logger.error('Question:: Error in question csv validation');
+    if (!questionsCsv?.result?.isValid) {
+      logger.error(questionsCsv?.error?.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
       await QuestionSetStage.destroy({ where: { process_id: processId } });
       await QuestionStage.destroy({ where: { process_id: processId } });

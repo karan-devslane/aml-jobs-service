@@ -84,7 +84,7 @@ export const QuestionSetStage = AppDataSource.define(
     },
     status: {
       type: DataTypes.ENUM('progress', 'errored', 'success'),
-      allowNull: false,
+      allowNull: true,
     },
     error_info: {
       type: DataTypes.JSON,

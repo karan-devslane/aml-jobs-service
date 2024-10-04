@@ -13,9 +13,9 @@ export const Question = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    question_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    process_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     question_set_id: {
       type: DataTypes.STRING,
@@ -47,7 +47,7 @@ export const Question = AppDataSource.define(
     },
     repository: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     taxonomy: {
       type: DataTypes.JSONB,
@@ -66,7 +66,7 @@ export const Question = AppDataSource.define(
       allowNull: false,
     },
     media: {
-      type: DataTypes.ARRAY(DataTypes.JSONB),
+      type: DataTypes.JSONB,
       allowNull: true,
     },
     question_body: {

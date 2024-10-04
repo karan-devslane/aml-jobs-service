@@ -59,7 +59,7 @@ export const ContentStage = AppDataSource.define(
     },
     media_files: {
       type: DataTypes.JSONB,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('progress', 'errored', 'success'),
