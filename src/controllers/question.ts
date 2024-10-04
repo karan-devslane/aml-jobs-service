@@ -33,17 +33,17 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
   for (const questions of questionsCsv) {
     const validQuestionHeader = await validateCSVQuestionHeaderRow(questions);
-    if (!validQuestionHeader.result.isValid) return validQuestionHeader;
+    if (!validQuestionHeader?.result?.isValid) return validQuestionHeader;
     const {
       result: { data },
     } = validQuestionHeader;
 
     const validQuestionRows = processQuestionRows(data?.rows, data?.header);
-    if (!validQuestionRows.result.isValid) return validQuestionRows;
+    if (!validQuestionRows?.result?.isValid) return validQuestionRows;
     const { result } = validQuestionRows;
 
     questionsData = questionsData.concat(result.data);
-    if (questionsData.length === 0) {
+    if (questionsData?.length === 0) {
       logger.error('Error while processing the question csv data');
       return {
         error: { errStatus: 'Empty', errMsg: 'empty question data found' },
@@ -57,19 +57,19 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
   logger.info('Insert question Stage::Questions Data ready for bulk insert');
   const createQuestions = await bulkInsertQuestionStage(questionsData);
-  if (!createQuestions.result.isValid) return createQuestions;
+  if (!createQuestions?.result?.isValid) return createQuestions;
 
   const validateQuestions = await validateStagedQuestionData();
-  if (!validateQuestions.result.isValid) {
+  if (!validateQuestions?.result?.isValid) {
     const uploadQuestion = await uploadErroredQuestionsToCloud();
-    if (!uploadQuestion.result.isValid) return uploadQuestion;
+    if (!uploadQuestion?.result?.isValid) return uploadQuestion;
     return validateQuestions;
   }
 
   await updateProcess(processId, { status: Status.VALIDATED });
 
   const questionsMedia = await processQuestionMediaFiles();
-  if (!questionsMedia.result.isValid) {
+  if (!questionsMedia?.result?.isValid) {
     logger.error('Error while validating stage question table');
     return questionsMedia;
   }
@@ -79,7 +79,7 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
 const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
   const templateHeader = await getCSVTemplateHeader(questionEntry.entryName);
-  if (!templateHeader.result.isValid) {
+  if (!templateHeader?.result?.isValid) {
     return {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
       result: {
@@ -89,7 +89,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
     };
   }
   const questionRowHeader = getCSVHeaderAndRow(questionEntry);
-  if (!questionRowHeader.result.isValid) {
+  if (!questionRowHeader?.result?.isValid) {
     logger.error(`Question Row/header::Template header, header, or rows are missing  for file ${questionEntry.entryName}`);
     return questionRowHeader;
   }
@@ -99,8 +99,8 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
     },
   } = questionRowHeader;
   const isValidHeader = validateHeader(questionEntry.entryName, header, templateHeader.result.data);
-  if (!isValidHeader.result.isValid) {
-    logger.error(isValidHeader.error.errMsg);
+  if (!isValidHeader?.result?.isValid) {
+    logger.error(isValidHeader?.error?.errMsg);
     return isValidHeader;
   }
   logger.info(`Question Row/header::Row and Header mapping process started for ${processId} `);
@@ -115,7 +115,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
 
 const processQuestionRows = (rows: any, header: any) => {
   const processData = processRow(rows, header);
-  if (!processData || processData.length === 0) {
+  if (!processData || processData?.length === 0) {
     logger.error('Question Row/header:: Row processing failed or returned empty data');
     return {
       error: { errStatus: 'process_error', errMsg: 'Question Row/header:: Row processing failed or returned empty data' },
@@ -127,7 +127,7 @@ const processQuestionRows = (rows: any, header: any) => {
   }
   logger.info('Question Row/header:: header and row process successfully and process 2 started');
   const updatedProcessData = processQuestionStage(processData);
-  if (!updatedProcessData || updatedProcessData.length === 0) {
+  if (!updatedProcessData || updatedProcessData?.length === 0) {
     logger.error('Question Row/header:: Stage 2 data processing failed or returned empty data');
     return {
       error: { errStatus: 'process_stage_error', errMsg: 'Data processing failed or returned empty data' },
@@ -149,10 +149,10 @@ const processQuestionRows = (rows: any, header: any) => {
 
 const bulkInsertQuestionStage = async (insertData: object[]) => {
   const questionStage = await createQuestionStage(insertData);
-  if (questionStage.error) {
-    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting ${questionStage.message}`);
+  if (questionStage?.error) {
+    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting ${questionStage?.message}`);
     return {
-      error: { errStatus: 'errored', errMsg: questionStage.message },
+      error: { errStatus: 'errored', errMsg: questionStage?.message },
       result: {
         isValid: false,
         data: null,
@@ -172,8 +172,8 @@ const bulkInsertQuestionStage = async (insertData: object[]) => {
 const validateStagedQuestionData = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
   const validateMetadata = await checkValidity(getAllQuestionStage);
-  if (!validateMetadata.result.isValid) return validateMetadata;
-  if (getAllQuestionStage.error) {
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+  if (getAllQuestionStage?.error) {
     logger.error(`Validate Question Stage:: ${processId}.`);
     return {
       error: { errStatus: 'error', errMsg: `Validate Question Stage:: ${processId}.` },
@@ -200,7 +200,7 @@ const validateStagedQuestionData = async () => {
   for (const question of getAllQuestionStage) {
     const { id, question_id, question_set_id, question_type, l1_skill, body } = question;
     const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type });
-    if (checkRecord.error) {
+    if (checkRecord?.error) {
       logger.error(`Validate Question Stage:: ${processId} ,${checkRecord.message}.`);
       return {
         error: { errStatus: 'error', errMsg: `unexpected error ,${checkRecord.message}` },
@@ -209,7 +209,7 @@ const validateStagedQuestionData = async () => {
         },
       };
     }
-    if (checkRecord.length > 1) {
+    if (checkRecord?.length > 1) {
       logger.error(`Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`);
       await updateQuestionStage(
         { id },
@@ -277,7 +277,7 @@ const validateStagedQuestionData = async () => {
 
 const uploadErroredQuestionsToCloud = async () => {
   const getQuestions = await getAllStageQuestion();
-  if (getQuestions.error) {
+  if (getQuestions?.error) {
     logger.error('unexpected error occurred while get all stage data');
     return {
       error: { errStatus: 'unexpected_error', errMsg: 'unexpected error occurred while get all stage data' },
@@ -313,7 +313,7 @@ const uploadErroredQuestionsToCloud = async () => {
 const processQuestionMediaFiles = async () => {
   try {
     const getQuestions = await getAllStageQuestion();
-    if (getQuestions.error) {
+    if (getQuestions?.error) {
       logger.error('unexpected error occurred while get all stage data');
       return {
         error: { errStatus: 'unexpected_error', errMsg: 'unexpected error occurred while get all stage data' },
@@ -324,11 +324,11 @@ const processQuestionMediaFiles = async () => {
       };
     }
     for (const question of getQuestions) {
-      if (question.media_files?.length > 0) {
+      if (question?.media_files?.length > 0) {
         const mediaFiles = await Promise.all(
-          question.media_files.map(async (o: string) => {
+          question?.media_files?.map(async (o: string) => {
             const foundMedia = mediaFileEntries.slice(1).find((media: any) => {
-              return media.entryName.split('/')[1] === o;
+              return media?.entryName?.split('/')[1] === o;
             });
             if (foundMedia) {
               const mediaData = await uploadMediaFile(foundMedia, 'question');
@@ -344,7 +344,7 @@ const processQuestionMediaFiles = async () => {
         if (mediaFiles.every((file: any) => file === null)) continue;
 
         const validMediaFiles = mediaFiles.filter((file) => file !== null);
-        if (validMediaFiles.length === 0) {
+        if (validMediaFiles?.length === 0) {
           return {
             error: { errStatus: 'Empty', errMsg: 'No media found for the question' },
             result: {
@@ -354,7 +354,7 @@ const processQuestionMediaFiles = async () => {
           };
         }
         const updateContent = await updateQuestionStage({ id: question.id }, { media_files: validMediaFiles });
-        if (updateContent.error) {
+        if (updateContent?.error) {
           logger.error('Question Media upload:: Media validation failed');
           throw new Error('error while updating media');
         }
@@ -383,7 +383,7 @@ const processQuestionMediaFiles = async () => {
 
 const insertMainQuestions = async () => {
   const insertToMainQuestion = await migrateToMainQuestion();
-  if (!insertToMainQuestion.result.isValid) return insertToMainQuestion;
+  if (!insertToMainQuestion?.result?.isValid) return insertToMainQuestion;
 
   logger.info(`Question Bulk insert:: bulk upload completed  for Process ID: ${processId}`);
   await QuestionStage.truncate({ restartIdentity: true });
@@ -399,7 +399,7 @@ const insertMainQuestions = async () => {
 
 export const migrateToMainQuestion = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
-  if (getAllQuestionStage.error) {
+  if (getAllQuestionStage?.error) {
     logger.error(`Validate Question Stage:: ${processId}.`);
     return {
       error: { errStatus: 'errored', errMsg: 'error while get all stage data' },
@@ -420,7 +420,7 @@ export const migrateToMainQuestion = async () => {
     };
   }
   const questionInsert = await createQuestion(insertData);
-  if (questionInsert.error) {
+  if (questionInsert?.error) {
     logger.error(`Insert Question main:: ${processId} question bulk data error in inserting to main table.`);
     return {
       error: { errStatus: 'errored', errMsg: 'error while inserting staging data to question table' },
@@ -451,12 +451,12 @@ const processQuestionStage = (questionsData: any) => {
     Fib: fibFields,
   };
   questionsData.forEach((question: any) => {
-    const questionType = question.question_type === 'Grid-1' ? `${question.question_type}_${question.l1_skill}` : question.question_type;
+    const questionType = question?.question_type === 'Grid-1' ? `${question?.question_type}_${question?.l1_skill}` : question?.question_type;
     const relevantFields = fieldMapping[questionType];
     const filteredBody: any = {};
     relevantFields.forEach((field: any) => {
-      if (question.body[field] !== undefined) {
-        filteredBody[field] = question.body[field];
+      if (question?.body[field] !== undefined) {
+        filteredBody[field] = question?.body[field];
       }
     });
     question.body = filteredBody;
@@ -480,39 +480,39 @@ const formatQuestionStageData = async (stageData: any[]) => {
         mcq_option_5 = null,
         mcq_option_6 = null,
         mcq_correct_options = null,
-      } = obj.body || {};
+      } = obj?.body || {};
 
-      const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { identifier: null };
+      const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj?.question_set_id && qs.l1_skill === obj?.l1_skill) || { identifier: null };
       const transferData = {
         identifier: uuid.v4(),
         question_set_id: questionSetId.identifier,
-        question_type: obj.question_type,
-        operation: obj.l1_skill,
-        hints: obj.hint,
-        sequence: obj.sequence,
-        name: { en: obj.title || obj.question_text },
-        description: { en: obj.description },
+        question_type: obj?.question_type,
+        operation: obj?.l1_skill,
+        hints: obj?.hint,
+        sequence: obj?.sequence,
+        name: { en: obj?.title || obj?.question_text },
+        description: { en: obj?.description },
         tenant: '',
-        repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
+        repository: repositories.find((repository: any) => repository.name.en === obj?.repository_name),
         taxonomy: {
-          board: boards.find((board: any) => board.name.en === obj.board),
-          class: classes.find((Class: any) => Class.name.en === obj.class),
-          l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
-          l2_skill: obj.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-          l3_skill: obj.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+          board: boards.find((board: any) => board?.name?.en === obj?.board),
+          class: classes.find((Class: any) => Class?.name?.en === obj?.class),
+          l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
+          l2_skill: obj?.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
+          l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
         },
-        sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
+        sub_skills: obj?.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
-          options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
-          correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
-          answers: getAnswer(obj.l1_skill, grid_fib_n1, grid_fib_n2, obj.question_type, obj.body, obj.question_type),
-          wrong_answer: convertWrongAnswerSubSkills({ carry: obj.sub_skill_carry, procedural: obj.sub_skill_procedural, x_plus_x: obj.sub_skill_x_plus_0, x_plus_0: obj.sub_skill_x_plus_x }),
+          options: obj?.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+          correct_option: obj?.type === 'Mcq' ? mcq_correct_options : undefined,
+          answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
+          wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
         },
-        benchmark_time: obj.benchmark_time,
+        benchmark_time: obj?.benchmark_time,
         status: 'draft',
-        media: obj.media_files,
-        process_id: obj.process_id,
+        media: obj?.media_files,
+        process_id: obj?.process_id,
         created_by: 'system',
         is_active: true,
       };

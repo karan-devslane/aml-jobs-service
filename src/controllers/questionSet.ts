@@ -14,7 +14,7 @@ let processId: string;
 export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id: string) => {
   processId = process_id;
   let questionSetsData: object[] = [];
-  if (questionSetsCsv.length === 0) {
+  if (questionSetsCsv?.length === 0) {
     logger.error(`${processId} Question set data validation resulted in empty data.`);
     return {
       error: { errStatus: 'Empty', errMsg: 'empty question set data found' },
@@ -27,18 +27,18 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
 
   for (const questionSet of questionSetsCsv) {
     const validatedQuestionSetHeader = await validateCSVQuestionSetHeaderRow(questionSet);
-    if (!validatedQuestionSetHeader.result.isValid) return validatedQuestionSetHeader;
+    if (!validatedQuestionSetHeader?.result?.isValid) return validatedQuestionSetHeader;
 
     const {
       result: { data },
     } = validatedQuestionSetHeader;
 
     const validatedRowData = processQuestionSetRows(data?.rows, data?.header);
-    if (!validatedRowData.result.isValid) return validatedRowData;
+    if (!validatedRowData?.result?.isValid) return validatedRowData;
     const { result } = validatedRowData;
 
     questionSetsData = questionSetsData.concat(result.data);
-    if (questionSetsData.length === 0) {
+    if (questionSetsData?.length === 0) {
       logger.error('Error while processing the question set csv data');
       return {
         error: { errStatus: 'Empty', errMsg: 'Error question set csv data' },
@@ -52,13 +52,13 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
 
   logger.info('Insert question Set Stage::Questions set Data ready for bulk insert');
   const createQuestionSetsStage = await bulkInsertQuestionSetStage(questionSetsData);
-  if (!createQuestionSetsStage.result.isValid) return createQuestionSetsStage;
+  if (!createQuestionSetsStage?.result?.isValid) return createQuestionSetsStage;
 
   const validateQuestionSets = await validateQuestionSetsStage();
-  if (!validateQuestionSets.result.isValid) {
+  if (!validateQuestionSets?.result?.isValid) {
     logger.error('Error while validating stage question set data');
     const uploadQuestionSets = await uploadErroredQuestionSetsToCloud();
-    if (!uploadQuestionSets.result.isValid) return uploadQuestionSets;
+    if (!uploadQuestionSets?.result?.isValid) return uploadQuestionSets;
     return validateQuestionSets;
   }
 
@@ -69,8 +69,8 @@ export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id
 };
 
 const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
-  const templateHeader = await getCSVTemplateHeader(questionSetEntry.entryName);
-  if (!templateHeader.result.isValid) {
+  const templateHeader = await getCSVTemplateHeader(questionSetEntry?.entryName);
+  if (!templateHeader?.result?.isValid) {
     return {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
       result: {
@@ -80,8 +80,8 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
     };
   }
   const questionSetRowHeader = getCSVHeaderAndRow(questionSetEntry);
-  if (!questionSetRowHeader.result.isValid) {
-    logger.error(`Question Set Row/header:: Template header, header, or rows are missing for  ${questionSetEntry.entryName}`);
+  if (!questionSetRowHeader?.result?.isValid) {
+    logger.error(`Question Set Row/header:: Template header, header, or rows are missing for  ${questionSetEntry?.entryName}`);
     return questionSetRowHeader;
   }
 
@@ -90,8 +90,8 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
       data: { header },
     },
   } = questionSetRowHeader;
-  const isValidHeader = validateHeader(questionSetEntry.entryName, header, templateHeader.result.data);
-  if (!isValidHeader.result.isValid) {
+  const isValidHeader = validateHeader(questionSetEntry?.entryName, header, templateHeader?.result?.data);
+  if (!isValidHeader?.result?.isValid) {
     logger.error('Question Set Row/header:: Header validation failed');
     return isValidHeader;
   }
@@ -101,14 +101,14 @@ const validateCSVQuestionSetHeaderRow = async (questionSetEntry: any) => {
     error: { errStatus: null, errMsg: null },
     result: {
       isValid: true,
-      data: questionSetRowHeader.result.data,
+      data: questionSetRowHeader?.result?.data,
     },
   };
 };
 
 const processQuestionSetRows = (rows: any, header: any) => {
   const processedRowData = processRow(rows, header);
-  if (!processedRowData || processedRowData.length === 0) {
+  if (!processedRowData || processedRowData?.length === 0) {
     logger.error('Question Set Row/header:: Row processing failed or returned empty data');
     return {
       error: { errStatus: 'process_error', errMsg: 'Row processing failed or returned empty data' },
@@ -130,7 +130,7 @@ const processQuestionSetRows = (rows: any, header: any) => {
 
 const bulkInsertQuestionSetStage = async (insertData: object[]) => {
   const questionSetStage = await createQuestionSetStage(insertData);
-  if (questionSetStage.error) {
+  if (questionSetStage?.error) {
     logger.error(`Insert Question SetStaging:: ${processId} question set  bulk data error in inserting ,${questionSetStage.message}`);
     return {
       error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting,${questionSetStage.message}` },
@@ -153,8 +153,8 @@ const bulkInsertQuestionSetStage = async (insertData: object[]) => {
 const validateQuestionSetsStage = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
   const validateMetadata = await checkValidity(getAllQuestionSetStage);
-  if (!validateMetadata.result.isValid) return validateMetadata;
-  if (getAllQuestionSetStage.error) {
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+  if (getAllQuestionSetStage?.error) {
     logger.error(`Validate Question Set Stage:: ${processId} unexpected error.`);
     return {
       error: { errStatus: 'error', errMsg: `question Set Stage data  unexpected error.` },
@@ -178,7 +178,7 @@ const validateQuestionSetsStage = async () => {
   for (const questionSet of getAllQuestionSetStage) {
     const { id, question_set_id, l1_skill } = questionSet;
     const checkRecord = await questionSetStageMetaData({ question_set_id, l1_skill });
-    if (checkRecord.error) {
+    if (checkRecord?.error) {
       logger.error(`Validate Question Set Stage:: ${processId}.`);
       return {
         error: { errStatus: 'error', errMsg: `question Set Stage data unexpected error.` },
@@ -188,7 +188,7 @@ const validateQuestionSetsStage = async () => {
         },
       };
     }
-    if (checkRecord.length > 1) {
+    if (checkRecord?.length > 1) {
       await updateQuestionStageSet(
         { id },
         {
@@ -212,7 +212,7 @@ const validateQuestionSetsStage = async () => {
 
 const uploadErroredQuestionSetsToCloud = async () => {
   const questionSets = await getAllStageQuestionSet();
-  if (questionSets.error) {
+  if (questionSets?.error) {
     logger.error('unexpected error occurred while get all stage data');
     return {
       error: { errStatus: 'unexpected_error', errMsg: 'unexpected error occurred while get all stage data' },
@@ -246,7 +246,7 @@ const uploadErroredQuestionSetsToCloud = async () => {
 
 const insertMainQuestionSets = async () => {
   const insertedMainQuestionSets = await migrateToMainQuestionSet();
-  if (!insertedMainQuestionSets.result.isValid) {
+  if (!insertedMainQuestionSets?.result?.isValid) {
     logger.error(`Question set bulk insert:: ${processId} staging data are invalid for main question set insert`);
     return insertedMainQuestionSets;
   }
@@ -264,7 +264,7 @@ const insertMainQuestionSets = async () => {
 
 export const migrateToMainQuestionSet = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
-  if (getAllQuestionSetStage.error) {
+  if (getAllQuestionSetStage?.error) {
     logger.error(`Insert Question set main:: ${processId}.`);
     return {
       error: { errStatus: 'errored', errMsg: 'error in question set insert to main table ' },
@@ -285,7 +285,7 @@ export const migrateToMainQuestionSet = async () => {
     };
   }
   const insertedQuestionSets = await createQuestionSet(insertData);
-  if (insertedQuestionSets.error) {
+  if (insertedQuestionSets?.error) {
     logger.error(`Insert Question set main:: ${processId} question set data error in inserting to main table .`);
     return {
       error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting .` },
@@ -309,32 +309,32 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
   const contentData = await getContents();
   const transformedData = stageData.map((obj) => {
-    const contentId = obj.instruction_media?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content));
-    const SubSkills = obj.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)).filter((sub: any) => sub);
+    const contentId = obj?.instruction_media?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content));
+    const SubSkills = obj?.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)).filter((sub: any) => sub);
     const transferData = {
       identifier: uuid.v4(),
-      question_set_id: obj.question_set_id,
+      question_set_id: obj?.question_set_id,
       content_id: contentId?.identifier ?? null,
-      instruction_text: obj.instruction_text ?? '',
-      sequence: obj.sequence,
-      title: { en: obj.title || obj.question_text },
-      description: { en: obj.description },
+      instruction_text: obj?.instruction_text ?? '',
+      sequence: obj?.sequence,
+      title: { en: obj?.title || obj?.question_text },
+      description: { en: obj?.description },
       tenant: '',
-      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
+      repository: repositories.find((repository: any) => repository?.name?.en === obj?.repository_name),
       taxonomy: {
-        board: boards.find((board: any) => board.name.en === obj.board),
-        class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
-        l2_skill: obj.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        board: boards.find((board: any) => board?.name?.en === obj?.board),
+        class: classes.find((Class: any) => Class?.name?.en === obj?.class),
+        l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
+        l2_skill: obj?.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
+        l3_skill: obj?.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
       },
       sub_skills: SubSkills ?? null,
-      purpose: obj.purpose,
-      is_atomic: obj.is_atomic,
-      gradient: obj.gradient,
-      group_name: obj.group_name,
+      purpose: obj?.purpose,
+      is_atomic: obj?.is_atomic,
+      gradient: obj?.gradient,
+      group_name: obj?.group_name,
       status: 'draft',
-      process_id: obj.process_id,
+      process_id: obj?.process_id,
       created_by: 'system',
       is_active: true,
     };
