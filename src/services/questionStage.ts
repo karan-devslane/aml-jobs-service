@@ -8,7 +8,7 @@ export const createQuestionStage = async (insertData: Array<Record<string, any>>
     const stagingData = await QuestionStage.bulkCreate(insertData, { transaction: transact });
     await transact.commit();
     const [dataValues] = stagingData;
-    return { dataValues };
+    return { error: false, dataValues };
   } catch (error) {
     await transact.rollback();
     logger.error(error);

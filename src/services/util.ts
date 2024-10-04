@@ -176,10 +176,14 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['question_id'] = cellValue;
         } else if (headerName.includes('sequence') || headerName.includes('benchmark_time')) {
           acc[headerName] = Number(cellValue);
-        } else if (headerName.includes('x+x')) {
-          acc['sub_skill_xx'] = cellValue;
-        } else if (headerName.includes('x+0')) {
-          acc['sub_skill_x0'] = cellValue;
+        } else if (headerName.includes('x_plus_x')) {
+          acc['sub_skill_x_plus_x'] = cellValue;
+        } else if (headerName.includes('x_plus_0')) {
+          acc['sub_skill_x_plus_0'] = cellValue;
+        } else if (headerName.includes('procedural')) {
+          acc['sub_skill_procedural'] = cellValue;
+        } else if (headerName.includes('carry')) {
+          acc['sub_skill_carry'] = cellValue;
         } else if (headerName.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
         } else if (headerName.includes('instruction_media')) {

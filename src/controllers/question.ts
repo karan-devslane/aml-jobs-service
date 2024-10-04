@@ -465,65 +465,66 @@ const processQuestionStage = (questionsData: any) => {
 };
 
 const formatQuestionStageData = async (stageData: any[]) => {
-  const { boards, classes, skills, subSkills, repositories } = await preloadData();
-  const questionSetData = await getQuestionSets();
+  try {
+    const { boards, classes, skills, subSkills, repositories } = await preloadData();
+    const questionSetData = await getQuestionSets();
 
-  const transformedData = stageData.map((obj) => {
-    const {
-      grid_fib_n1 = null,
-      grid_fib_n2 = null,
-      mcq_option_1 = null,
-      mcq_option_2 = null,
-      mcq_option_3 = null,
-      mcq_option_4 = null,
-      mcq_option_5 = null,
-      mcq_option_6 = null,
-      mcq_correct_options = null,
-      sub_skill_carry = null,
-      sub_skill_procedural = null,
-      sub_skill_xx = null,
-      sub_skill_x0 = null,
-    } = obj.body || {};
+    const transformedData = stageData.map((obj) => {
+      const {
+        grid_fib_n1 = null,
+        grid_fib_n2 = null,
+        mcq_option_1 = null,
+        mcq_option_2 = null,
+        mcq_option_3 = null,
+        mcq_option_4 = null,
+        mcq_option_5 = null,
+        mcq_option_6 = null,
+        mcq_correct_options = null,
+      } = obj.body || {};
 
-    const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { identifier: null };
-    const transferData = {
-      identifier: uuid.v4(),
-      question_set_id: questionSetId.identifier,
-      question_type: obj.question_type,
-      operation: obj.l1_skill,
-      hints: obj.hint,
-      sequence: obj.sequence,
-      name: { en: obj.title || obj.question_text },
-      description: { en: obj.description },
-      tenant: '',
-      repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
-      taxonomy: {
-        board: boards.find((board: any) => board.name.en === obj.board),
-        class: classes.find((Class: any) => Class.name.en === obj.class),
-        l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
-        l2_skill: obj.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-        l3_skill: obj.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
-      },
-      sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
-      question_body: {
-        numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
-        options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
-        correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
-        answers: getAnswer(obj.l1_skill, grid_fib_n1, grid_fib_n2, obj.question_type, obj.body, obj.question_type),
-        wrong_answer: convertWrongAnswerSubSkills({ sub_skill_carry, sub_skill_procedural, sub_skill_xx, sub_skill_x0 }),
-      },
-      benchmark_time: obj.benchmark_time,
-      status: 'draft',
-      media: obj.media_files,
-      process_id: obj.process_id,
-      created_by: 'system',
-      is_active: true,
-    };
-    return transferData;
-  });
+      const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj.question_set_id && qs.l1_skill === obj.l1_skill) || { identifier: null };
+      const transferData = {
+        identifier: uuid.v4(),
+        question_set_id: questionSetId.identifier,
+        question_type: obj.question_type,
+        operation: obj.l1_skill,
+        hints: obj.hint,
+        sequence: obj.sequence,
+        name: { en: obj.title || obj.question_text },
+        description: { en: obj.description },
+        tenant: '',
+        repository: repositories.find((repository: any) => repository.name.en === obj.repository_name),
+        taxonomy: {
+          board: boards.find((board: any) => board.name.en === obj.board),
+          class: classes.find((Class: any) => Class.name.en === obj.class),
+          l1_skill: skills.find((skill: any) => skill.name.en == obj.l1_skill),
+          l2_skill: obj.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+          l3_skill: obj.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill.name.en === skill)),
+        },
+        sub_skills: obj.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)),
+        question_body: {
+          numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
+          options: obj.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+          correct_option: obj.type === 'Mcq' ? mcq_correct_options : undefined,
+          answers: getAnswer(obj.l1_skill, grid_fib_n1, grid_fib_n2, obj.question_type, obj.body, obj.question_type),
+          wrong_answer: convertWrongAnswerSubSkills({ carry: obj.sub_skill_carry, procedural: obj.sub_skill_procedural, x_plus_x: obj.sub_skill_x_plus_0, x_plus_0: obj.sub_skill_x_plus_x }),
+        },
+        benchmark_time: obj.benchmark_time,
+        status: 'draft',
+        media: obj.media_files,
+        process_id: obj.process_id,
+        created_by: 'system',
+        is_active: true,
+      };
+      return transferData;
+    });
 
-  logger.info('Data transfer:: staging Data transferred as per original format');
-  return transformedData;
+    logger.info('Data transfer:: staging Data transferred as per original format');
+    return transformedData;
+  } catch (error) {
+    logger.error('Question Insert main::Error while formatting data for main');
+    return [];
+  }
 };
 
 const convertWrongAnswerSubSkills = (inputData: any) => {
@@ -533,11 +534,10 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
     if (_.isEmpty(value)) {
       continue;
     }
-    const numbers = (value as number[]).map(Number).filter((n: any) => !isNaN(n) && n !== 0);
+    const numbers = (value as number[]).map(Number).filter((n: any) => !isNaN(n) && n !== '' && n !== undefined && n !== null);
     if (numbers.length > 0) {
       wrongAnswers.push({
         value: numbers,
-        sub_skill_id: 1,
         subskillname: key,
       });
     }
@@ -551,7 +551,7 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
     case 'Multiplication_Grid-1':
       return multiplyWithSteps(num1, num2, type, bodyObject);
     case 'Division_Grid-1':
-      return divideWithSteps(Number(num2), Number(num1), type, bodyObject);
+      return divideWithSteps(Number(num1), Number(num2), type, bodyObject);
 
     case 'Addition_Grid-1':
       return addSubAnswer(bodyObject, skill);
