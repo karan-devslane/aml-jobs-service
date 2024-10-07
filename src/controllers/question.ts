@@ -501,7 +501,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
           l2_skill: obj?.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
           l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
         },
-        sub_skills: obj?.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
+        sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
           options: obj?.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,

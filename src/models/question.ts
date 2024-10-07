@@ -77,6 +77,10 @@ export const Question = AppDataSource.define(
       type: DataTypes.JSONB,
       allowNull: true,
     },
+    sequence: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     created_by: {
       type: DataTypes.STRING,
       allowNull: false,

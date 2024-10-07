@@ -136,9 +136,9 @@ const processContentRows = (rows: any, header: any) => {
 const bulkInsertContentStage = async (insertData: object[]) => {
   const contentStage = await createContentStage(insertData);
   if (contentStage?.error) {
-    logger.error(`Insert Content Staging:: ${processId} content bulk data error in inserting,${contentStage.message}`);
+    logger.error(`Insert Content Staging:: ${processId} content bulk data error in inserting`);
     return {
-      error: { errStatus: 'errored', errMsg: contentStage.message },
+      error: { errStatus: 'errored', errMsg: 'content bulk data error in inserting' },
       result: {
         isValid: false,
         data: null,
