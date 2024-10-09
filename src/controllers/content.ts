@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
-import { createContent, deleteContent } from '../services/content';
+import { createContent, deleteContents } from '../services/content';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 
@@ -405,6 +405,6 @@ const formatStagedContentData = async (stageData: any[]) => {
 export const destroyContent = async () => {
   const contents = await contentStageMetaData({ process_id: processId });
   const contentId = contents.map((obj: any) => obj.identifier);
-  const deletedContent = await deleteContent(contentId);
+  const deletedContent = await deleteContents(contentId);
   return deletedContent;
 };

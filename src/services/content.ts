@@ -33,7 +33,7 @@ export const getContents = async (): Promise<any> => {
   }
 };
 
-export const deleteContent = async (whereClause: any): Promise<any> => {
+export const deleteContents = async (whereClause: any): Promise<any> => {
   try {
     await Content.destroy({
       where: {
