@@ -504,8 +504,8 @@ const formatQuestionStageData = async (stageData: any[]) => {
         sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
-          options: obj?.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
-          correct_option: obj?.type === 'Mcq' ? mcq_correct_options : undefined,
+          options: obj?.question_type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+          correct_option: obj?.question_type === 'Mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
         },
@@ -573,19 +573,19 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   let result = 0;
   let answerTop = '';
   let answerResult = '';
-  let isPrefil;
+  let isPrefil = false;
 
   if (l1_skill === 'Addition') {
     result = parseInt(n1Str) + parseInt(n2Str);
     isPrefil = grid1_show_carry === 'yes' ? true : false;
   } else if (l1_skill === 'Subtraction') {
     result = parseInt(n1Str) - parseInt(n2Str);
-    isPrefil = grid1_show_regroup === 'yes' ? true : false;
+    isPrefil = grid1_show_regroup === 'yes';
   }
 
   const resultStr = result.toString().padStart(n1Str.length, '0');
 
-  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(n1Str.length - grid1_pre_fills_top.length) : 'B'.repeat(n1Str.length);
+  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(grid_fib_n1.length - grid1_pre_fills_top.length) : 'B'.repeat(grid_fib_n1.length);
 
   const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
@@ -599,7 +599,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   if (isPrefil && l1_skill === 'Addition') {
     let carry = 0;
-    for (let i = n1Str.length - 1; i >= 0; i--) {
+    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
       const sum = parseInt(n1Str[i]) + parseInt(n2Str[i]) + carry;
       carry = Math.floor(sum / 10);
 
@@ -611,7 +611,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     }
   } else if (isPrefil && l1_skill === 'Subtraction') {
     let borrow = 0;
-    for (let i = n1Str.length - 1; i >= 0; i--) {
+    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
       let n1Digit = parseInt(n1Str[i]);
       const n2Digit = parseInt(n2Str[i]) + borrow;
 
@@ -634,6 +634,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   }
   return {
     result: parseInt(resultStr),
+    isPrefil,
     answerTop,
     answerResult: answerResult.split('').reverse().join(''),
   };
