@@ -1,15 +1,12 @@
 import logger from '../utils/logger';
 import * as _ from 'lodash';
-import * as uuid from 'uuid';
 import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
-import { QuestionStage } from '../models/questionStage';
 import { appConfiguration } from '../config';
-import { createQuestion } from '../services/question';
+import { createQuestion, deleteQuestions } from '../services/question';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
-import { getQuestionSets } from '../services/questionSet';
 
 let mediaFileEntries: any[];
 let processId: string;
@@ -171,8 +168,6 @@ const bulkInsertQuestionStage = async (insertData: object[]) => {
 
 const validateStagedQuestionData = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
-  const validateMetadata = await checkValidity(getAllQuestionStage);
-  if (!validateMetadata?.result?.isValid) return validateMetadata;
   if (getAllQuestionStage?.error) {
     logger.error(`Validate Question Stage:: ${processId}.`);
     return {
@@ -197,9 +192,13 @@ const validateStagedQuestionData = async () => {
       },
     };
   }
+
+  const validateMetadata = await checkValidity(getAllQuestionStage);
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+
   for (const question of getAllQuestionStage) {
-    const { id, question_id, question_set_id, question_type, l1_skill, body } = question;
-    const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type });
+    const { id, question_id, question_set_id, question_type, l1_skill, body, sequence } = question;
+    const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type, sequence });
     if (checkRecord?.error) {
       logger.error(`Validate Question Stage:: ${processId} ,${checkRecord.message}.`);
       return {
@@ -210,16 +209,16 @@ const validateStagedQuestionData = async () => {
       };
     }
     if (checkRecord?.length > 1) {
-      logger.error(`Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`);
+      errMsg = `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},with ${sequence}`;
+      logger.error(errMsg);
       await updateQuestionStage(
         { id },
         {
           status: 'errored',
-          error_info: `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`,
+          error_info: errMsg,
         },
       );
       errStatus = 'errored';
-      errMsg = `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`;
       isUnique = false;
     }
     let requiredFields: string[] = [];
@@ -386,7 +385,6 @@ const insertMainQuestions = async () => {
   if (!insertToMainQuestion?.result?.isValid) return insertToMainQuestion;
 
   logger.info(`Question Bulk insert:: bulk upload completed  for Process ID: ${processId}`);
-  await QuestionStage.truncate({ restartIdentity: true });
   logger.info(`Completed:: ${processId} Question csv uploaded successfully`);
   return {
     error: { errStatus: null, errMsg: null },
@@ -467,7 +465,6 @@ const processQuestionStage = (questionsData: any) => {
 const formatQuestionStageData = async (stageData: any[]) => {
   try {
     const { boards, classes, skills, subSkills, repositories } = await preloadData();
-    const questionSetData = await getQuestionSets();
 
     const transformedData = stageData.map((obj) => {
       const {
@@ -481,15 +478,11 @@ const formatQuestionStageData = async (stageData: any[]) => {
         mcq_option_6 = null,
         mcq_correct_options = null,
       } = obj?.body || {};
-
-      const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj?.question_set_id && qs.l1_skill === obj?.l1_skill) || { identifier: null };
       const transferData = {
-        identifier: uuid.v4(),
-        question_set_id: questionSetId.identifier,
+        identifier: obj.identifier,
         question_type: obj?.question_type,
         operation: obj?.l1_skill,
         hints: obj?.hint,
-        sequence: obj?.sequence,
         name: { en: obj?.title || obj?.question_text },
         description: { en: obj?.description },
         tenant: '',
@@ -512,7 +505,6 @@ const formatQuestionStageData = async (stageData: any[]) => {
         benchmark_time: obj?.benchmark_time,
         status: 'draft',
         media: obj?.media_files,
-        process_id: obj?.process_id,
         created_by: 'system',
         is_active: true,
       };
@@ -750,4 +742,11 @@ const applyPrefillPattern = (numStr: string, pattern: string) => {
     }
   }
   return result;
+};
+
+export const destroyQuestion = async () => {
+  const questions = await questionStageMetaData({ process_id: processId });
+  const questionId = questions.map((obj: any) => obj.identifier);
+  const deletedQuestion = await deleteQuestions(questionId);
+  return deletedQuestion;
 };

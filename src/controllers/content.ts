@@ -1,11 +1,9 @@
 import logger from '../utils/logger';
 import * as _ from 'lodash';
-import * as uuid from 'uuid';
 import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
-import { createContent } from '../services/content';
-import { ContentStage } from '../models/contentStage';
+import { createContent, deleteContent } from '../services/content';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 
@@ -157,8 +155,6 @@ const bulkInsertContentStage = async (insertData: object[]) => {
 
 const validateStagedContentData = async () => {
   const getAllContentStage = await contentStageMetaData({ process_id: processId });
-  const validateMetadata = await checkValidity(getAllContentStage);
-  if (!validateMetadata?.result?.isValid) return validateMetadata;
   let isValid = true;
   if (getAllContentStage?.error) {
     logger.error(`Validate Content Stage:: ${processId} ,the get all Data is invalid format or errored fields`);
@@ -180,6 +176,10 @@ const validateStagedContentData = async () => {
       },
     };
   }
+
+  const validateMetadata = await checkValidity(getAllContentStage);
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+
   for (const content of getAllContentStage) {
     const { id, content_id, l1_skill } = content;
     const checkRecord = await contentStageMetaData({ content_id, l1_skill });
@@ -319,7 +319,6 @@ const insertMainContents = async () => {
   if (!mainContents?.result?.isValid) return mainContents;
 
   logger.info(`Content Main insert:: bulk upload completed  for Process ID: ${processId}`);
-  await ContentStage.truncate({ restartIdentity: true });
   logger.info(`Completed:: ${processId} Content csv uploaded successfully`);
   return {
     error: { errStatus: null, errMsg: null },
@@ -377,7 +376,7 @@ const formatStagedContentData = async (stageData: any[]) => {
 
   const transformedData = stageData.map((obj) => {
     const transferData = {
-      identifier: uuid.v4(),
+      identifier: obj.identifier,
       content_id: obj?.content_id,
       name: { en: obj?.title || obj?.question_text },
       description: { en: obj?.description },
@@ -394,7 +393,6 @@ const formatStagedContentData = async (stageData: any[]) => {
       gradient: obj?.gradient,
       status: 'draft',
       media: obj?.media_files,
-      process_id: obj?.process_id,
       created_by: 'system',
       is_active: true,
     };
@@ -402,4 +400,11 @@ const formatStagedContentData = async (stageData: any[]) => {
   });
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
+};
+
+export const destroyContent = async () => {
+  const contents = await contentStageMetaData({ process_id: processId });
+  const contentId = contents.map((obj: any) => obj.identifier);
+  const deletedContent = await deleteContent(contentId);
+  return deletedContent;
 };

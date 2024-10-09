@@ -8,12 +8,10 @@ import { contentStageMetaData } from '../services/contentStage';
 import { questionStageMetaData } from '../services/questionStage';
 import { questionSetStageMetaData } from '../services/questionSetStage';
 import { fetchAndExtractZipEntries } from '../services/util';
-import { handleQuestionCsv, migrateToMainQuestion } from './question';
-import { handleQuestionSetCsv, migrateToMainQuestionSet } from './questionSet';
-import { handleContentCsv, migrateToMainContent } from './content';
+import { destroyQuestion, handleQuestionCsv, migrateToMainQuestion } from './question';
+import { destroyQuestionSet, handleQuestionSetCsv, migrateToMainQuestionSet } from './questionSet';
+import { destroyContent, handleContentCsv, migrateToMainContent } from './content';
 import { Status } from '../enums/status';
-import { Content } from '../models/content';
-import { QuestionSet } from '../models/questionSet';
 import { ContentStage } from '../models/contentStage';
 import { QuestionSetStage } from '../models/questionSetStage';
 import { QuestionStage } from '../models/questionStage';
@@ -268,29 +266,35 @@ const handleCSVFiles = async (csvFiles: { entryName: string }[]) => {
     if (!contentsCsv?.result?.isValid) {
       logger.error(contentsCsv?.error?.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
+      await destroyContent();
       return contentsCsv;
     }
-
-    logger.info(`Question Set Validate::csv Data validation initiated for question sets`);
-    const questionSetsCsv = await handleQuestionSetCsv(validCSVData.questionSets, processId);
-    if (!questionSetsCsv?.result?.isValid) {
-      logger.error(questionSetsCsv?.error?.errMsg);
-      await ContentStage.destroy({ where: { process_id: processId } });
-      await QuestionSetStage.destroy({ where: { process_id: processId } });
-      await Content.destroy({ where: { process_id: processId } });
-      return questionSetsCsv;
-    }
-
-    logger.info(`Question Validate::csv Data validation initiated for questions`);
+    logger.info(`Question Validate::csv Data validation initiated for question`);
     const questionsCsv = await handleQuestionCsv(validCSVData.questions, mediaEntries, processId);
     if (!questionsCsv?.result?.isValid) {
       logger.error(questionsCsv?.error?.errMsg);
       await ContentStage.destroy({ where: { process_id: processId } });
-      await QuestionSetStage.destroy({ where: { process_id: processId } });
+      await destroyContent();
       await QuestionStage.destroy({ where: { process_id: processId } });
-      await Content.destroy({ where: { process_id: processId } });
-      await QuestionSet.destroy({ where: { process_id: processId } });
+      await destroyQuestion();
       return questionsCsv;
+    }
+
+    logger.info(`Question Set Validate::csv Data validation initiated for questions Set`);
+    const questionSetsCsv = await handleQuestionSetCsv(validCSVData.questionSets, processId);
+    if (!questionSetsCsv?.result?.isValid) {
+      logger.error(questionSetsCsv?.error?.errMsg);
+      await ContentStage.destroy({ where: { process_id: processId } });
+      await destroyContent();
+      await QuestionStage.destroy({ where: { process_id: processId } });
+      await destroyQuestion();
+      await QuestionSetStage.destroy({ where: { process_id: processId } });
+      await destroyQuestionSet();
+      return questionSetsCsv;
+    } else {
+      await ContentStage.truncate({ restartIdentity: true });
+      await QuestionStage.truncate({ restartIdentity: true });
+      await QuestionSetStage.truncate({ restartIdentity: true });
     }
     return { error: { errStatus: null, errMsg: null }, result: { isValid: true, data: null } };
   } catch (error) {

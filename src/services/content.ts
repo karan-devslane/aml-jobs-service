@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { AppDataSource } from '../config';
 import { Content } from '../models/content';
 import logger from '../utils/logger';
@@ -28,6 +29,24 @@ export const getContents = async (): Promise<any> => {
     logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get records' : '';
+    return { error: true, message: errorMsg };
+  }
+};
+
+export const deleteContent = async (whereClause: any): Promise<any> => {
+  try {
+    await Content.destroy({
+      where: {
+        process_id: {
+          [Op.in]: whereClause,
+        },
+      },
+    });
+    return { error: false };
+  } catch (error) {
+    logger.error(error);
+    const err = error instanceof Error;
+    const errorMsg = err ? error.message || 'failed to delete records' : '';
     return { error: true, message: errorMsg };
   }
 };
