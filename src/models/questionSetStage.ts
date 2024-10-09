@@ -13,6 +13,10 @@ export const QuestionSetStage = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    process_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
     question_set_id: {
       type: DataTypes.STRING,
       allowNull: false,
