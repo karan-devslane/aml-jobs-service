@@ -9,17 +9,9 @@ export const QuestionSet = AppDataSource.define(
       primaryKey: true,
       autoIncrement: true,
     },
-    question_set_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     identifier: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    process_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
     },
     title: {
       type: DataTypes.JSONB,
@@ -30,6 +22,10 @@ export const QuestionSet = AppDataSource.define(
       allowNull: true,
     },
     repository: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    questions: {
       type: DataTypes.JSONB,
       allowNull: true,
     },
@@ -66,7 +62,7 @@ export const QuestionSet = AppDataSource.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    content_id: {
+    content_ids: {
       type: DataTypes.ARRAY(DataTypes.STRING),
       allowNull: true,
     },

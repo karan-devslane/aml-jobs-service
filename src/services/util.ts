@@ -6,6 +6,7 @@ import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
 import { appConfiguration } from '../config';
 import { Board, Class, Skill, SubSkill, UniqueValues, Mismatches } from '../types/util';
+import * as uuid from 'uuid';
 
 const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
@@ -167,6 +168,8 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc.body[headerName] = cellValue;
         } else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill') || headerName?.includes('sub_skill')) {
           acc[headerName] = typeof cellValue === 'string' ? [cellValue] : cellValue;
+        } else if (headerName?.includes('instruction_media')) {
+          acc['instruction_media'] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName?.includes('media')) {
           acc.media_files = acc.media_files || [];
           if (cellValue) acc.media_files.push(cellValue);
@@ -186,13 +189,12 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['sub_skill_carry'] = cellValue;
         } else if (headerName?.includes('is_atomic')) {
           acc['is_atomic'] = cellValue.toLocaleString().toLowerCase() === 'true';
-        } else if (headerName?.includes('instruction_media')) {
-          acc['instruction_media'] = typeof cellValue === 'string' ? [cellValue] : cellValue;
         } else if (headerName?.includes('instruction_text')) {
           acc['instruction_text'] = cellValue;
         } else {
           acc[headerName] = cellValue;
         }
+        acc.identifier = uuid.v4();
         acc.process_id = processId;
         acc.created_by = 'system';
         return acc;

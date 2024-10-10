@@ -1,4 +1,4 @@
-import { Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { AppDataSource } from '../config';
 import { QuestionSet } from '../models/questionSet';
 import logger from '../utils/logger';
@@ -29,6 +29,24 @@ export const getQuestionSets = async (): Promise<any> => {
     logger.error(error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to get records' : '';
+    return { error: true, message: errorMsg };
+  }
+};
+
+export const deleteQuestionSets = async (whereClause: any): Promise<any> => {
+  try {
+    await QuestionSet.destroy({
+      where: {
+        process_id: {
+          [Op.in]: whereClause,
+        },
+      },
+    });
+    return { error: false };
+  } catch (error) {
+    logger.error(error);
+    const err = error instanceof Error;
+    const errorMsg = err ? error.message || 'failed to delete records' : '';
     return { error: true, message: errorMsg };
   }
 };

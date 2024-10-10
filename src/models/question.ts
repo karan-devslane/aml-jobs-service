@@ -13,14 +13,6 @@ export const Question = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    process_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
-    question_set_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     benchmark_time: {
       type: DataTypes.INTEGER,
       allowNull: false,

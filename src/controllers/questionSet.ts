@@ -1,13 +1,12 @@
 import logger from '../utils/logger';
 import * as _ from 'lodash';
-import * as uuid from 'uuid';
 import { updateProcess } from '../services/process';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
-import { QuestionSetStage } from '../models/questionSetStage';
-import { createQuestionSet } from '../services/questionSet';
+import { createQuestionSet, deleteQuestionSets } from '../services/questionSet';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
-import { getContents } from '../services/content';
+import { questionStageMetaData } from '../services/questionStage';
+import { contentStageMetaData } from '../services/contentStage';
 
 let processId: string;
 
@@ -152,8 +151,6 @@ const bulkInsertQuestionSetStage = async (insertData: object[]) => {
 
 const validateQuestionSetsStage = async () => {
   const getAllQuestionSetStage = await questionSetStageMetaData({ process_id: processId });
-  const validateMetadata = await checkValidity(getAllQuestionSetStage);
-  if (!validateMetadata?.result?.isValid) return validateMetadata;
   if (getAllQuestionSetStage?.error) {
     logger.error(`Validate Question Set Stage:: ${processId} unexpected error.`);
     return {
@@ -174,10 +171,14 @@ const validateQuestionSetsStage = async () => {
       },
     };
   }
+
+  const validateMetadata = await checkValidity(getAllQuestionSetStage);
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+
   let isValid = true;
   for (const questionSet of getAllQuestionSetStage) {
-    const { id, question_set_id, l1_skill } = questionSet;
-    const checkRecord = await questionSetStageMetaData({ question_set_id, l1_skill });
+    const { id, question_set_id, l1_skill, sequence } = questionSet;
+    const checkRecord = await questionSetStageMetaData({ question_set_id, class: questionSet?.class, l1_skill, sequence });
     if (checkRecord?.error) {
       logger.error(`Validate Question Set Stage:: ${processId}.`);
       return {
@@ -193,7 +194,7 @@ const validateQuestionSetsStage = async () => {
         { id },
         {
           status: 'errored',
-          error_info: `Duplicate question_set_id found as ${question_set_id} for ${l1_skill}`,
+          error_info: `Duplicate question_set_id found as ${question_set_id} for ${l1_skill} with ${sequence}`,
         },
       );
 
@@ -251,7 +252,6 @@ const insertMainQuestionSets = async () => {
     return insertedMainQuestionSets;
   }
 
-  await QuestionSetStage.truncate({ restartIdentity: true });
   logger.info(`Question set bulk upload:: completed successfully and question_sets.csv file upload to cloud for Process ID: ${processId}`);
   return {
     error: { errStatus: null, errMsg: null },
@@ -307,39 +307,81 @@ export const migrateToMainQuestionSet = async () => {
 
 const formatStagedQuestionSetData = async (stageData: any[]) => {
   const { boards, classes, skills, subSkills, repositories } = await preloadData();
-  const contentData = await getContents();
-  const transformedData = stageData.map((obj) => {
-    const contentId = obj?.instruction_media?.map((qs_Content: string) => contentData.find((content: any) => content.content_id === qs_Content));
-    const SubSkills = obj?.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)).filter((sub: any) => sub);
-    const transferData = {
-      identifier: uuid.v4(),
-      question_set_id: obj?.question_set_id,
-      content_id: contentId?.identifier ?? null,
-      instruction_text: obj?.instruction_text ?? '',
-      sequence: obj?.sequence,
-      title: { en: obj?.title || obj?.question_text },
-      description: { en: obj?.description },
-      tenant: '',
-      repository: repositories.find((repository: any) => repository?.name?.en === obj?.repository_name),
-      taxonomy: {
-        board: boards.find((board: any) => board?.name?.en === obj?.board),
-        class: classes.find((Class: any) => Class?.name?.en === obj?.class),
-        l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
-        l2_skill: obj?.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
-        l3_skill: obj?.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
-      },
-      sub_skills: SubSkills ?? null,
-      purpose: obj?.purpose,
-      is_atomic: obj?.is_atomic,
-      gradient: obj?.gradient,
-      group_name: obj?.group_name,
-      status: 'draft',
-      process_id: obj?.process_id,
-      created_by: 'system',
-      is_active: true,
-    };
-    return transferData;
-  });
+  const transformedData = await Promise.all(
+    stageData.map(async (obj) => {
+      const contentData = await mapContentsToQuestionSet(obj);
+      const questionList = await mapQuestionToQuestionSet(obj.question_set_id);
+      const SubSkills = obj?.sub_skills.map((subSkill: string) => subSkills.find((sub: any) => sub.name.en === subSkill)).filter((sub: any) => sub);
+      const transferData = {
+        identifier: obj.identifier,
+        content_ids: contentData,
+        questions: questionList,
+        instruction_text: obj?.instruction_text ?? '',
+        sequence: obj?.sequence,
+        title: { en: obj?.title || obj?.question_text },
+        description: { en: obj?.description },
+        tenant: '',
+        repository: repositories.find((repository: any) => repository?.name?.en === obj?.repository_name),
+        taxonomy: {
+          board: boards.find((board: any) => board?.name?.en === obj?.board),
+          class: classes.find((Class: any) => Class?.name?.en === obj?.class),
+          l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
+          l2_skill: obj?.l2_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
+          l3_skill: obj?.l3_skill.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
+        },
+        sub_skills: SubSkills ?? null,
+        purpose: obj?.purpose,
+        is_atomic: obj?.is_atomic,
+        gradient: obj?.gradient,
+        group_name: obj?.group_name,
+        status: 'draft',
+        created_by: 'system',
+        is_active: true,
+      };
+      return transferData;
+    }),
+  );
   logger.info('Data transfer:: staging Data transferred as per original format');
   return transformedData;
+};
+
+const mapQuestionToQuestionSet = async (question_set_id: string) => {
+  const questionsObj: any[] = [];
+  const getAllQuestionStage = await questionStageMetaData({ process_id: processId, question_set_id });
+
+  if (getAllQuestionStage.error) {
+    return questionsObj;
+  }
+
+  for (const question of getAllQuestionStage) {
+    const { id = null, identifier = null, sequence = null } = question;
+    questionsObj.push({
+      id,
+      identifier,
+      sequence,
+    });
+  }
+
+  return questionsObj;
+};
+
+const mapContentsToQuestionSet = async (obj: any) => {
+  if (_.isEmpty(obj.instruction_media)) return null;
+  const contentIdentifiers: string[] = [];
+
+  for (const mediaFile of obj.instruction_media) {
+    const contentData = await contentStageMetaData({ content_id: mediaFile, l1_skill: obj.l1_skill, class: obj.class });
+    if (_.isEmpty(contentData)) return null;
+
+    contentIdentifiers.push(contentData[0].identifier);
+  }
+
+  return contentIdentifiers;
+};
+
+export const destroyQuestionSet = async () => {
+  const questionSets = await questionSetStageMetaData({ process_id: processId });
+  const questionSetId = questionSets.map((obj: any) => obj.identifier);
+  const deletedQuestionSet = await deleteQuestionSets(questionSetId);
+  return deletedQuestionSet;
 };

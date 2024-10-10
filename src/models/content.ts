@@ -13,14 +13,6 @@ export const Content = AppDataSource.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    content_id: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    process_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
     name: {
       type: DataTypes.JSONB,
       allowNull: false,

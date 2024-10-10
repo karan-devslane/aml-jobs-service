@@ -1,15 +1,12 @@
 import logger from '../utils/logger';
 import * as _ from 'lodash';
-import * as uuid from 'uuid';
 import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
-import { QuestionStage } from '../models/questionStage';
 import { appConfiguration } from '../config';
-import { createQuestion } from '../services/question';
+import { createQuestion, deleteQuestions } from '../services/question';
 import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
-import { getQuestionSets } from '../services/questionSet';
 
 let mediaFileEntries: any[];
 let processId: string;
@@ -171,8 +168,6 @@ const bulkInsertQuestionStage = async (insertData: object[]) => {
 
 const validateStagedQuestionData = async () => {
   const getAllQuestionStage = await questionStageMetaData({ process_id: processId });
-  const validateMetadata = await checkValidity(getAllQuestionStage);
-  if (!validateMetadata?.result?.isValid) return validateMetadata;
   if (getAllQuestionStage?.error) {
     logger.error(`Validate Question Stage:: ${processId}.`);
     return {
@@ -197,9 +192,13 @@ const validateStagedQuestionData = async () => {
       },
     };
   }
+
+  const validateMetadata = await checkValidity(getAllQuestionStage);
+  if (!validateMetadata?.result?.isValid) return validateMetadata;
+
   for (const question of getAllQuestionStage) {
-    const { id, question_id, question_set_id, question_type, l1_skill, body } = question;
-    const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type });
+    const { id, question_id, question_set_id, question_type, l1_skill, body, sequence } = question;
+    const checkRecord = await questionStageMetaData({ question_id, question_set_id, l1_skill, question_type, sequence });
     if (checkRecord?.error) {
       logger.error(`Validate Question Stage:: ${processId} ,${checkRecord.message}.`);
       return {
@@ -210,16 +209,16 @@ const validateStagedQuestionData = async () => {
       };
     }
     if (checkRecord?.length > 1) {
-      logger.error(`Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`);
+      errMsg = `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},with ${sequence}`;
+      logger.error(errMsg);
       await updateQuestionStage(
         { id },
         {
           status: 'errored',
-          error_info: `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`,
+          error_info: errMsg,
         },
       );
       errStatus = 'errored';
-      errMsg = `Duplicate question and question_set_id combination found for question id ${question_id} and question set id ${question_set_id} for ${question_type} ${l1_skill},`;
       isUnique = false;
     }
     let requiredFields: string[] = [];
@@ -386,7 +385,6 @@ const insertMainQuestions = async () => {
   if (!insertToMainQuestion?.result?.isValid) return insertToMainQuestion;
 
   logger.info(`Question Bulk insert:: bulk upload completed  for Process ID: ${processId}`);
-  await QuestionStage.truncate({ restartIdentity: true });
   logger.info(`Completed:: ${processId} Question csv uploaded successfully`);
   return {
     error: { errStatus: null, errMsg: null },
@@ -467,7 +465,6 @@ const processQuestionStage = (questionsData: any) => {
 const formatQuestionStageData = async (stageData: any[]) => {
   try {
     const { boards, classes, skills, subSkills, repositories } = await preloadData();
-    const questionSetData = await getQuestionSets();
 
     const transformedData = stageData.map((obj) => {
       const {
@@ -481,15 +478,11 @@ const formatQuestionStageData = async (stageData: any[]) => {
         mcq_option_6 = null,
         mcq_correct_options = null,
       } = obj?.body || {};
-
-      const questionSetId = questionSetData.find((qs: any) => qs.question_set_id === obj?.question_set_id && qs.l1_skill === obj?.l1_skill) || { identifier: null };
       const transferData = {
-        identifier: uuid.v4(),
-        question_set_id: questionSetId.identifier,
+        identifier: obj.identifier,
         question_type: obj?.question_type,
         operation: obj?.l1_skill,
         hints: obj?.hint,
-        sequence: obj?.sequence,
         name: { en: obj?.title || obj?.question_text },
         description: { en: obj?.description },
         tenant: '',
@@ -501,18 +494,17 @@ const formatQuestionStageData = async (stageData: any[]) => {
           l2_skill: obj?.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
           l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
         },
-        sub_skills: obj?.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
+        sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
-          options: obj?.type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
-          correct_option: obj?.type === 'Mcq' ? mcq_correct_options : undefined,
+          options: obj?.question_type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+          correct_option: obj?.question_type === 'Mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
         },
         benchmark_time: obj?.benchmark_time,
         status: 'draft',
         media: obj?.media_files,
-        process_id: obj?.process_id,
         created_by: 'system',
         is_active: true,
       };
@@ -573,19 +565,19 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   let result = 0;
   let answerTop = '';
   let answerResult = '';
-  let isPrefil;
+  let isPrefil = false;
 
   if (l1_skill === 'Addition') {
     result = parseInt(n1Str) + parseInt(n2Str);
     isPrefil = grid1_show_carry === 'yes' ? true : false;
   } else if (l1_skill === 'Subtraction') {
     result = parseInt(n1Str) - parseInt(n2Str);
-    isPrefil = grid1_show_regroup === 'yes' ? true : false;
+    isPrefil = grid1_show_regroup === 'yes';
   }
 
   const resultStr = result.toString().padStart(n1Str.length, '0');
 
-  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(n1Str.length - grid1_pre_fills_top.length) : 'B'.repeat(n1Str.length);
+  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(grid_fib_n1.length - grid1_pre_fills_top.length) : 'B'.repeat(grid_fib_n1.length);
 
   const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
@@ -599,7 +591,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   if (isPrefil && l1_skill === 'Addition') {
     let carry = 0;
-    for (let i = n1Str.length - 1; i >= 0; i--) {
+    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
       const sum = parseInt(n1Str[i]) + parseInt(n2Str[i]) + carry;
       carry = Math.floor(sum / 10);
 
@@ -611,7 +603,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     }
   } else if (isPrefil && l1_skill === 'Subtraction') {
     let borrow = 0;
-    for (let i = n1Str.length - 1; i >= 0; i--) {
+    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
       let n1Digit = parseInt(n1Str[i]);
       const n2Digit = parseInt(n2Str[i]) + borrow;
 
@@ -634,6 +626,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   }
   return {
     result: parseInt(resultStr),
+    isPrefil,
     answerTop,
     answerResult: answerResult.split('').reverse().join(''),
   };
@@ -749,4 +742,11 @@ const applyPrefillPattern = (numStr: string, pattern: string) => {
     }
   }
   return result;
+};
+
+export const destroyQuestion = async () => {
+  const questions = await questionStageMetaData({ process_id: processId });
+  const questionId = questions.map((obj: any) => obj.identifier);
+  const deletedQuestion = await deleteQuestions(questionId);
+  return deletedQuestion;
 };
