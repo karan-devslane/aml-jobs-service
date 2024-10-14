@@ -355,7 +355,41 @@ const processQuestionMediaFiles = async () => {
         const updateContent = await updateQuestionStage({ id: question.id }, { media_files: validMediaFiles });
         if (updateContent?.error) {
           logger.error('Question Media upload:: Media validation failed');
-          throw new Error('error while updating media');
+          return {
+            error: { errStatus: 'failed', errMsg: 'error while uploading media in question' },
+            result: {
+              isValid: false,
+              data: null,
+            },
+          };
+        }
+      }
+      const {
+        question_type,
+        body: { mcq_question_image = null },
+      } = question;
+      if (question_type === 'Mcq' && mcq_question_image) {
+        const foundImage = mediaFileEntries.slice(1).find((media: any) => {
+          return media?.entryName?.split('/')[1] === mcq_question_image;
+        });
+
+        if (foundImage) {
+          const imageData = await uploadMediaFile(foundImage, 'question');
+          if (!imageData) {
+            logger.error(`Image upload failed for ${mcq_question_image}`);
+          }
+          const body = { ...question.body, mcq_question_image: imageData };
+          const updateContent = await updateQuestionStage({ id: question.id }, { body: body });
+          if (updateContent?.error) {
+            logger.error('Question Media upload:: Media validation failed');
+            return {
+              error: { errStatus: 'failed', errMsg: 'error while uploading image in question mcq' },
+              result: {
+                isValid: false,
+                data: null,
+              },
+            };
+          }
         }
       }
     }
@@ -476,6 +510,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
         mcq_option_4 = null,
         mcq_option_5 = null,
         mcq_option_6 = null,
+        mcq_question_image = null,
         mcq_correct_options = null,
       } = obj?.body || {};
       const transferData = {
@@ -497,7 +532,9 @@ const formatQuestionStageData = async (stageData: any[]) => {
         sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
-          options: obj?.question_type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6] : undefined,
+          question_image: mcq_question_image,
+          options:
+            obj?.question_type === 'Mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => option !== null && option.trim() !== '') : undefined,
           correct_option: obj?.question_type === 'Mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
