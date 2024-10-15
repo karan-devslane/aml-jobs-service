@@ -368,7 +368,7 @@ const processQuestionMediaFiles = async () => {
         question_type,
         body: { mcq_question_image = null },
       } = question;
-      if (question_type.toLowerCase() === 'mcq' && mcq_question_image) {
+      if (question_type?.toLowerCase() === 'mcq' && mcq_question_image) {
         const foundImage = mediaFileEntries.slice(1).find((media: any) => {
           return media?.entryName?.split('/')[1] === mcq_question_image;
         });
@@ -534,10 +534,10 @@ const formatQuestionStageData = async (stageData: any[]) => {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
           question_image: mcq_question_image,
           options:
-            obj?.question_type.toLowerCase() === 'mcq'
+            obj?.question_type?.toLowerCase() === 'mcq'
               ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => option !== null && option.trim() !== '')
               : undefined,
-          correct_option: obj?.question_type.toLowerCase() === 'mcq' ? mcq_correct_options : undefined,
+          correct_option: obj?.question_type?.toLowerCase() === 'mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
         },
