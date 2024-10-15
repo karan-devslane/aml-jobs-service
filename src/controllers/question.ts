@@ -535,7 +535,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
           question_image: mcq_question_image,
           options:
             obj?.question_type?.toLowerCase() === 'mcq'
-              ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => option !== null && option.trim() !== '')
+              ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => option !== null && option?.trim() !== '')
               : undefined,
           correct_option: obj?.question_type?.toLowerCase() === 'mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
