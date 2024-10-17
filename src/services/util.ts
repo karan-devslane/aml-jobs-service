@@ -155,7 +155,7 @@ export const processRow = (rows: string[][], header: string[]) => {
   return rows.map((row) =>
     row.reduce(
       (acc, cell, index) => {
-        const headerName = header[index].replace(/\r/g, '');
+        const headerName = header[index]?.replace(/\r/g, '');
         const cellValue = cell?.includes('#') ? cell.split('#').map((v: string) => v.trim()) : cell.replace(/\r/g, '');
         if (headerName?.includes('grid1_show_carry')) {
           acc[headerName] = cellValue === undefined ? 'no' : cellValue;
@@ -163,7 +163,7 @@ export const processRow = (rows: string[][], header: string[]) => {
         if (headerName?.includes('grid1_show_regroup')) {
           acc[headerName] = cellValue === undefined ? 'no' : cellValue;
         }
-        if (headerName?.startsWith('mcq') || headerName?.startsWith('fib') || headerName?.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
+        if (headerName?.startsWith('mcq') || headerName?.startsWith('fib') || headerName?.startsWith('grid') || headerName?.includes('n1') || headerName?.includes('n2')) {
           acc.body = acc.body || {};
           acc.body[headerName] = cellValue;
         } else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill') || headerName?.includes('sub_skill')) {
@@ -177,7 +177,7 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['question_set_id'] = cellValue;
         } else if (headerName?.includes('QID')) {
           acc['question_id'] = cellValue;
-        } else if (headerName?.includes('sequence') || headerName.includes('benchmark_time')) {
+        } else if (headerName?.includes('sequence') || headerName?.includes('benchmark_time')) {
           acc[headerName] = Number(cellValue);
         } else if (headerName?.includes('x_plus_x')) {
           acc['sub_skill_x_plus_x'] = cellValue;

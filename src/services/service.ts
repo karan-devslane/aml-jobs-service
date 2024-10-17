@@ -10,7 +10,7 @@ export const getTenants = async (): Promise<any> => {
   try {
     const tenants = await Tenant.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'identifier', 'name'],
       raw: true,
     });
     return tenants;
@@ -26,7 +26,7 @@ export const getBoards = async (): Promise<any> => {
   try {
     const boards = await boardMaster.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'identifier', 'name'],
       raw: true,
     });
     return boards;
@@ -42,7 +42,7 @@ export const getClasses = async (): Promise<any> => {
   try {
     const classes = await classMaster.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'identifier', 'name'],
       raw: true,
     });
     return classes;
@@ -58,7 +58,7 @@ export const getSkills = async (): Promise<any> => {
   try {
     const skills = await SkillMaster.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name', 'type'],
+      attributes: ['id', 'identifier', 'name', 'type'],
       raw: true,
     });
     return skills;
@@ -74,7 +74,7 @@ export const getSubSkills = async (): Promise<any> => {
   try {
     const subSkills = await SubSkillMaster.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'identifier', 'name'],
       raw: true,
     });
     return subSkills;
@@ -90,7 +90,7 @@ export const getRepository = async (): Promise<any> => {
   try {
     const repositories = await Repository.findAll({
       where: { is_active: true },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'identifier', 'name'],
       raw: true,
     });
     return repositories;

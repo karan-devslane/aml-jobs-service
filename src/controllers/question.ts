@@ -527,9 +527,11 @@ const formatQuestionStageData = async (stageData: any[]) => {
           class: classes.find((Class: any) => Class?.name?.en === obj?.class),
           l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
           l2_skill: obj?.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
-          l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
+          l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)).filter((option: any) => option !== null && option !== undefined && option !== ''),
         },
-        sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
+        sub_skills: obj?.sub_skill
+          ?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill))
+          .filter((option: any) => option !== null && option !== undefined && option !== ''),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
           question_image: mcq_question_image,
