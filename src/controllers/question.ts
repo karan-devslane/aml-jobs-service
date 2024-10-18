@@ -527,18 +527,14 @@ const formatQuestionStageData = async (stageData: any[]) => {
           class: classes.find((Class: any) => Class?.name?.en === obj?.class),
           l1_skill: skills.find((skill: any) => skill?.name?.en == obj?.l1_skill),
           l2_skill: obj?.l2_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)),
-          l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)).filter((option: any) => option !== null && option !== undefined && option !== ''),
+          l3_skill: obj?.l3_skill?.map((skill: string) => skills.find((Skill: any) => Skill?.name?.en === skill)).filter((option: any) => !_.isEmpty(option)),
         },
-        sub_skills: obj?.sub_skill
-          ?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill))
-          .filter((option: any) => option !== null && option !== undefined && option !== ''),
+        sub_skills: obj?.sub_skill?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)).filter((option: any) => !_.isEmpty(option)),
         question_body: {
           numbers: { n1: grid_fib_n1, n2: grid_fib_n2 },
           question_image: mcq_question_image,
           options:
-            obj?.question_type?.toLowerCase() === 'mcq'
-              ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => option !== null && option?.trim() !== '')
-              : undefined,
+            obj?.question_type?.toLowerCase() === 'mcq' ? [mcq_option_1, mcq_option_2, mcq_option_3, mcq_option_4, mcq_option_5, mcq_option_6].filter((option) => !_.isEmpty(option)) : undefined,
           correct_option: obj?.question_type?.toLowerCase() === 'mcq' ? mcq_correct_options : undefined,
           answers: getAnswer(obj?.l1_skill, grid_fib_n1, grid_fib_n2, obj?.question_type, obj?.body, obj?.question_type),
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
