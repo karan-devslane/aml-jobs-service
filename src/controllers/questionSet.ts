@@ -333,7 +333,7 @@ const formatStagedQuestionSetData = async (stageData: any[]) => {
         purpose: obj?.purpose,
         is_atomic: obj?.is_atomic,
         gradient: obj?.gradient,
-        group_name: obj?.group_name,
+        group_name: obj.group_name ? obj.group_name : null,
         status: 'draft',
         created_by: 'system',
         is_active: true,
