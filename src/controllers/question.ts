@@ -596,7 +596,8 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
 const addSubAnswer = (input: any, l1_skill: string) => {
   const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_carry, grid1_show_regroup } = input;
 
-  const n1Str = grid_fib_n1.padStart(Math.max(grid_fib_n1.length, grid_fib_n2.length), '0');
+  const maxLength = Math.max(grid_fib_n1.length, grid_fib_n2.length);
+  const n1Str = grid_fib_n1.padStart(maxLength, '0');
   const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
 
   let result = 0;
@@ -606,15 +607,14 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   if (l1_skill === 'Addition') {
     result = parseInt(n1Str) + parseInt(n2Str);
-    isPrefil = grid1_show_carry === 'yes' ? true : false;
+    isPrefil = grid1_show_carry === 'yes';
   } else if (l1_skill === 'Subtraction') {
     result = parseInt(n1Str) - parseInt(n2Str);
     isPrefil = grid1_show_regroup === 'yes';
   }
 
   const resultStr = result.toString().padStart(n1Str.length, '0');
-
-  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(grid_fib_n1.length - grid1_pre_fills_top.length) : 'B'.repeat(grid_fib_n1.length);
+  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(maxLength - grid1_pre_fills_top.length) : 'B'.repeat(maxLength);
 
   const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
@@ -628,7 +628,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   if (isPrefil && l1_skill === 'Addition') {
     let carry = 0;
-    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
+    for (let i = maxLength - 1; i >= 0; i--) {
       const sum = parseInt(n1Str[i]) + parseInt(n2Str[i]) + carry;
       carry = Math.floor(sum / 10);
 
@@ -640,7 +640,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     }
   } else if (isPrefil && l1_skill === 'Subtraction') {
     let borrow = 0;
-    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
+    for (let i = maxLength - 1; i >= 0; i--) {
       let n1Digit = parseInt(n1Str[i]);
       const n2Digit = parseInt(n2Str[i]) + borrow;
 
