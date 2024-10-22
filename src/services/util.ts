@@ -7,6 +7,10 @@ import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenan
 import { appConfiguration } from '../config';
 import { Board, Class, Skill, SubSkill, UniqueValues, Mismatches } from '../types/util';
 import * as uuid from 'uuid';
+import papaparse from 'papaparse';
+import * as fs from 'node:fs';
+import appRootPath from 'app-root-path';
+import path from 'path';
 
 const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
@@ -81,14 +85,19 @@ export const getCSVTemplateHeader = async (entryName: string) => {
   };
 };
 
-export const getCSVHeaderAndRow = (csvEntries: any) => {
+const getCSVEntries = (csvFile: any) => {
+  const filePath = path.join(appRootPath.path, 'tmp', `data.csv`);
+  fs.writeFileSync(filePath, csvFile.getData());
+  const localCSVFile = fs.readFileSync(filePath, 'utf-8');
+  const csvRows = papaparse.parse(localCSVFile)?.data;
+  fs.unlinkSync(filePath);
+  return csvRows as string[][];
+};
+
+export const getCSVHeaderAndRow = (csvFile: any) => {
   try {
-    const [header, ...rows] = csvEntries
-      .getData()
-      .toString('utf8')
-      .split('\n')
-      .map((row: string) => row?.split(','))
-      .filter((row: string[]) => row?.some((cell) => cell.trim() !== ''));
+    const csvEntries = getCSVEntries(csvFile);
+    const [header, ...rows] = csvEntries.filter((row: string[]) => row?.some((cell) => cell.trim() !== ''));
     logger.info('Row/Header:: header and rows are extracted');
     const cleanHeader = header.map((cell: string) => cell.replace(/\r/g, '').trim());
     const cleanRows = rows.map((row: any) => row.map((cell: string) => cell.replace(/\r/g, '').trim()));
@@ -177,8 +186,10 @@ export const processRow = (rows: string[][], header: string[]) => {
           acc['question_set_id'] = cellValue;
         } else if (headerName?.includes('QID')) {
           acc['question_id'] = cellValue;
-        } else if (headerName?.includes('sequence') || headerName?.includes('benchmark_time')) {
+        } else if (headerName?.includes('sequence')) {
           acc[headerName] = Number(cellValue);
+        } else if (headerName?.includes('benchmark_time')) {
+          acc[headerName] = cellValue && !Number.isNaN(Number(cellValue)) ? Number(cellValue) : 0;
         } else if (headerName?.includes('x_plus_x')) {
           acc['sub_skill_x_plus_x'] = cellValue;
         } else if (headerName?.includes('x_plus_0')) {
