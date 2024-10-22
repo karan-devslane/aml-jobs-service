@@ -598,7 +598,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   const n1Str = grid_fib_n1.padStart(Math.max(grid_fib_n1.length, grid_fib_n2.length), '0');
   const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
-
+  const maxLengthTwoNumber = Math.max(grid_fib_n1.length, grid_fib_n2.length);
   let result = 0;
   let answerTop = '';
   let answerResult = '';
@@ -612,9 +612,9 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     isPrefil = grid1_show_regroup === 'yes';
   }
 
-  const resultStr = result.toString().padStart(n1Str.length, '0');
+  const resultStr = result.toString();
 
-  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(grid_fib_n1.length - grid1_pre_fills_top.length) : 'B'.repeat(grid_fib_n1.length);
+  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(resultStr.length - 1) : 'B'.repeat(resultStr.length);
 
   const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
@@ -628,14 +628,30 @@ const addSubAnswer = (input: any, l1_skill: string) => {
 
   if (isPrefil && l1_skill === 'Addition') {
     let carry = 0;
-    for (let i = grid_fib_n1.length - 1; i >= 0; i--) {
+    let carryString = '';
+    for (let i = maxLengthTwoNumber - 1; i >= 0; i--) {
       const sum = parseInt(n1Str[i]) + parseInt(n2Str[i]) + carry;
       carry = Math.floor(sum / 10);
+      carryString = carry.toString() + carryString;
+    }
+    if (carryString[0] === '0') carryString = carryString.slice(1);
+    carryString.replace(/0/g, '#');
+    let mapIndex = 0;
 
-      if (finalPrefillTop[i] === 'B') {
-        answerTop = 'B' + answerTop;
+    for (let i = 0; i < carryString.length; i++) {
+      if (_.isEmpty(grid1_pre_fills_top)) {
+        answerTop = 'B'.repeat(n1Str.length);
+        break;
+      }
+      if (carryString[i] === '1') {
+        if (grid1_pre_fills_top[mapIndex] === 'F') {
+          answerTop += '1';
+        } else if (grid1_pre_fills_top[mapIndex] === 'B') {
+          answerTop += 'B';
+        }
+        mapIndex++;
       } else {
-        answerTop = carry.toString() + answerTop;
+        answerTop += '#';
       }
     }
   } else if (isPrefil && l1_skill === 'Subtraction') {
