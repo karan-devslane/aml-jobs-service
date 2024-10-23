@@ -43,5 +43,6 @@ const initializeJobScheduler = (): void => {
   process.on('uncaughtException', unexpectedErrorHandler);
   process.on('unhandledRejection', unexpectedErrorHandler);
 };
-
+// pre run on server startup
+processJob();
 initializeJobScheduler();
