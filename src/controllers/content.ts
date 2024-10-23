@@ -404,7 +404,7 @@ const formatStagedContentData = async (stageData: any[]) => {
 
 export const destroyContent = async () => {
   const contents = await contentStageMetaData({ process_id: processId });
-  const contentId = contents.map((obj: any) => obj.identifier);
+  const contentId = contents?.map((obj: any) => obj.identifier);
   const deletedContent = await deleteContents(contentId);
   return deletedContent;
 };

@@ -130,9 +130,9 @@ const processQuestionSetRows = (rows: any, header: any) => {
 const bulkInsertQuestionSetStage = async (insertData: object[]) => {
   const questionSetStage = await createQuestionSetStage(insertData);
   if (questionSetStage?.error) {
-    logger.error(`Insert Question SetStaging:: ${processId} question set  bulk data error in inserting ,${questionSetStage.message}`);
+    logger.error(`Insert Question SetStaging:: ${processId} question set  bulk data error in inserting .`);
     return {
-      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting,${questionSetStage.message}` },
+      error: { errStatus: 'errored', errMsg: `question set bulk data error in inserting.` },
       result: {
         isValid: false,
         data: null,
