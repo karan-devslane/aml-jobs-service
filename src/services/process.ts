@@ -22,7 +22,7 @@ export const updateProcess = async (process_id: string, updateObj: any): Promise
 
     return { error: false, updateProcess };
   } catch (error) {
-    logger.error('Error:: while execute the update process');
+    logger.error('Error:: while execute the update process', error);
     const err = error instanceof Error;
     const errorMsg = err ? error.message || 'failed to update a record' : '';
     return { error: true, message: errorMsg };
