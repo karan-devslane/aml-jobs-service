@@ -41,8 +41,8 @@ const appConfiguration: IConfiguration = {
   aws: {
     secretKey: get(envVars, 'AML_AWS_SECRET_KEY', ''),
     accessKey: get(envVars, 'AML_AWS_ACCESS_KEY', ''),
-    bucketRegion: get(envVars, 'AWL_AWS_BUCKET_REGION', 'us-east-1'),
-    bucketOutput: get(envVars, 'AWL_AWS_BUCKET_OUTPUT', 'table'),
+    bucketRegion: get(envVars, 'AML_AWS_BUCKET_REGION', 'us-east-1'),
+    bucketOutput: get(envVars, 'AML_AWS_BUCKET_OUTPUT', 'table'),
   },
 };
 
