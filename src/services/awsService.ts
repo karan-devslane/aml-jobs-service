@@ -6,10 +6,11 @@ import mime from 'mime-types';
 
 const {
   bucketName,
-  aws: { accessKey, secretKey },
+  aws: { accessKey, secretKey, bucketRegion },
 } = appConfiguration;
 
 const s3Client = new S3Client({
+  region: bucketRegion,
   credentials: {
     secretAccessKey: secretKey,
     accessKeyId: accessKey,
