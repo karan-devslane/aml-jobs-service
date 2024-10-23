@@ -4,9 +4,18 @@ import logger from '../utils/logger';
 import path from 'path';
 import mime from 'mime-types';
 
-const { bucketName } = appConfiguration;
+const {
+  bucketName,
+  aws: { accessKey, secretKey, bucketRegion },
+} = appConfiguration;
 
-const s3Client = new S3Client({});
+const s3Client = new S3Client({
+  region: bucketRegion,
+  credentials: {
+    secretAccessKey: secretKey,
+    accessKeyId: accessKey,
+  },
+});
 
 export const getAWSFolderData = async (filePath: string) => {
   const command = new GetObjectCommand({
