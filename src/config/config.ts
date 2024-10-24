@@ -57,7 +57,7 @@ const appConfiguration: IConfiguration = {
   requiredMetaFields: get(
     envVars,
     'REQUIRED_META_FIELDS',
-    '1_skill,l2_skill,class,board,sequence,question_type,repository_name,benchmark_time,identifier,process_id,content_id,question_id,question_set_id',
+    'l1_skill,l2_skill,class,board,sequence,question_type,repository_name,benchmark_time,identifier,process_id,content_id,QID,question_set_id',
   ).split(','),
 };
 
