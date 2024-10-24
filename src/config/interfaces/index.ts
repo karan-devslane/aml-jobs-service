@@ -33,6 +33,12 @@ export interface IConfiguration {
   templateFileName: string;
   templateFolder: string;
   bulkUploadFolder: string;
+  aws: {
+    secretKey: string;
+    accessKey: string;
+    bucketRegion: string;
+    bucketOutput: string;
+  };
   questionBodyFields: string[];
   mediaFields: string[];
   requiredMetaFields: string[];
