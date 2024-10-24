@@ -265,10 +265,8 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
 };
 
 export const checkRequiredMetaFields = (stageData: any) => {
-  console.log('🚀 ~ checkRequiredMetaFields ~ stageData:', stageData);
   let invalidFields: string[] = [];
   const hasInvalidField = _.some(stageData, (row) => {
-    console.log('🚀 ~ hasInvalidField ~ row:', row);
     const invalidForThisRow = _.filter(requiredMetaFields, (field) => {
       const value = row[field];
       return _.isNull(value);
