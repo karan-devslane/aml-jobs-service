@@ -1,7 +1,7 @@
 import logger from '../utils/logger';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
-import _ from 'lodash';
+import _, { isEmpty, isNaN } from 'lodash';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
 import { appConfiguration } from '../config';
@@ -103,28 +103,41 @@ const processEachField = (value: any, header: any) => {
   }
 
   //handle to make array fo string of l2 ,l3 and sub skills
-  else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill') || headerName?.includes('sub_skill')) {
-    value = typeof value === 'string' ? [value] : value;
+  else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill')) {
+    value = typeof value === 'string' ? (isEmpty(value) ? [] : [value]) : value;
   } else if (headerName === 'is_atomic') {
-    value = value ? value : false; // Assume media values are comma-separated, you can adjust this logic as needed
+    value = value ? value : false;
+  } else if (headerName.includes('sequence')) {
+    value = isEmpty(value) ? null : Number(value);
+  } else if (headerName.includes('benchmark_time')) {
+    value = isEmpty(value) ? null : Number(value);
+    if (isNaN(value)) {
+      value = null;
+    }
   }
 
   // Handle 'media' fields
   else if (headerName === 'instruction_media') {
-    value = value ? value?.split(',') : [value]; // Assume media values are comma-separated, you can adjust this logic as needed
+    value = value ? value?.split('#') : [value];
   } else if (headerName === 'media_file') {
-    value = value ? value?.split(',') : []; // Assume media values are comma-separated, you can adjust this logic as needed
+    value = value ? value?.split(',') : [];
   }
 
-  // Handle other custom fields like 'QID', 'x_plus_x', etc.
+  // Handle sub skills.
   else if (headerName?.includes('QID')) {
     value = value?.trim();
-  } else if (headerName?.includes('x_plus_x')) {
-    value = value?.trim();
-  } else if (headerName?.includes('procedural')) {
-    value = value?.trim();
-  } else if (headerName?.includes('carry')) {
-    value = value?.trim();
+  } else if (
+    headerName?.includes('x_plus_x') ||
+    headerName?.includes('procedural') ||
+    headerName?.includes('carry') ||
+    headerName?.includes('x_plus_0') ||
+    headerName?.includes('0_plus_x') ||
+    headerName?.includes('procedure') ||
+    headerName?.includes('uneq_pvp')
+  ) {
+    value = isEmpty(value) ? [] : value.includes('#') ? value.split('#') : [String(value)];
+  } else if (headerName.includes('sub_skill')) {
+    value = isEmpty(value) ? [] : value.includes('#') ? value.split('#') : [String(value)];
   }
 
   return value;
@@ -138,7 +151,6 @@ export const getCSVHeaderAndRow = (csvEntries: any) => {
     const parsedResult = papaparse?.parse(csvData, {
       header: true,
       skipEmptyLines: true,
-      dynamicTyping: true,
       transform: (value, header) => processEachField(value, header),
     });
 
@@ -282,7 +294,7 @@ export const checkRequiredMetaFields = (stageData: any) => {
   if (hasInvalidField) {
     logger.error('Skipping the process due to invalid or empty field(s):', uniqueFields?.join(','));
     return {
-      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s):, ${uniqueFields?.join(',')}` },
+      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s) or empty field(s):, ${uniqueFields?.join(',')}` },
       result: {
         isValid: false,
       },
