@@ -38,6 +38,9 @@ const appConfiguration: IConfiguration = {
   templateFileName: get(envVars, 'TEMPLATE_FILE_NAME', 'bulk_upload.zip'),
   templateFolder: get(envVars, 'TEMPLATE_FOLDER', 'template'),
   bulkUploadFolder: get(envVars, 'BULK_UPLOAD_FOLDER', 'upload'),
+  questionBodyFields: get(envVars, 'QUESTION_BODY_FIELDS', '').split(','),
+  mediaFields: get(envVars, 'MEDIA_FIELDS', '').split(','),
+  requiredMetaFields: get(envVars, 'REQUIRED_META_FIELDS', '').split(','),
 };
 
 export default appConfiguration;

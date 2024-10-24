@@ -5,13 +5,13 @@ import { updateProcess } from '../services/process';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
 import { appConfiguration } from '../config';
 import { createQuestion, deleteQuestions } from '../services/question';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity, checkRequiredMetaFields } from '../services/util';
 import { Status } from '../enums/status';
 
 let mediaFileEntries: any[];
 let processId: string;
 
-const { grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields } = appConfiguration;
+const { grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields, questionBodyFields, mediaFields } = appConfiguration;
 
 export const handleQuestionCsv = async (questionsCsv: object[], media: any, process_id: string) => {
   processId = process_id;
@@ -35,7 +35,7 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
       result: { data },
     } = validQuestionHeader;
 
-    const validQuestionRows = processQuestionRows(data?.rows, data?.header);
+    const validQuestionRows = processQuestionRows(data?.rows);
     if (!validQuestionRows?.result?.isValid) return validQuestionRows;
     const { result } = validQuestionRows;
 
@@ -110,20 +110,20 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
   };
 };
 
-const processQuestionRows = (rows: any, header: any) => {
-  const processData = processRow(rows, header);
-  if (!processData || processData?.length === 0) {
-    logger.error('Question Row/header:: Row processing failed or returned empty data');
+const processQuestionRows = (rows: any) => {
+  const processData = processRow(rows);
+  if (!processData || processData?.data?.length === 0) {
+    logger.error(`Question Row/header:: ${processData.errMsg}`);
     return {
-      error: { errStatus: 'process_error', errMsg: 'Question Row/header:: Row processing failed or returned empty data' },
+      error: { errStatus: 'process_error', errMsg: `question:: ${processData.errMsg}` },
       result: {
         isValid: false,
-        data: processData,
+        data: processData.data,
       },
     };
   }
   logger.info('Question Row/header:: header and row process successfully and process 2 started');
-  const updatedProcessData = processQuestionStage(processData);
+  const updatedProcessData = processQuestionStage(processData.data);
   if (!updatedProcessData || updatedProcessData?.length === 0) {
     logger.error('Question Row/header:: Stage 2 data processing failed or returned empty data');
     return {
@@ -147,9 +147,9 @@ const processQuestionRows = (rows: any, header: any) => {
 const bulkInsertQuestionStage = async (insertData: object[]) => {
   const questionStage = await createQuestionStage(insertData);
   if (questionStage?.error) {
-    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting ${questionStage?.message}`);
+    logger.error(`Insert Staging:: ${processId} question bulk data error in inserting`);
     return {
-      error: { errStatus: 'errored', errMsg: questionStage?.message },
+      error: { errStatus: 'errored', errMsg: `question bulk data error in inserting ${questionStage.message}` },
       result: {
         isValid: false,
         data: null,
@@ -192,6 +192,10 @@ const validateStagedQuestionData = async () => {
       },
     };
   }
+
+  // Check if any row has invalid fields and collect invalid field names
+  const requiredMetaFieldsCheck = checkRequiredMetaFields(getAllQuestionStage);
+  if (!requiredMetaFieldsCheck?.result?.isValid) return requiredMetaFieldsCheck;
 
   const validateMetadata = await checkValidity(getAllQuestionStage);
   if (!validateMetadata?.result?.isValid) return validateMetadata;
@@ -492,6 +496,8 @@ const processQuestionStage = (questionsData: any) => {
       }
     });
     question.body = filteredBody;
+    mediaFields.forEach((prop: any) => delete question[prop]);
+    questionBodyFields.forEach((prop: any) => delete question[prop]);
   });
   return questionsData;
 };
@@ -550,8 +556,8 @@ const formatQuestionStageData = async (stageData: any[]) => {
 
     logger.info('Data transfer:: staging Data transferred as per original format');
     return transformedData;
-  } catch (error) {
-    logger.error('Question Insert main::Error while formatting data for main');
+  } catch (error: any) {
+    logger.error('Question Insert main::Error while formatting data for main ', error.message);
     return [];
   }
 };

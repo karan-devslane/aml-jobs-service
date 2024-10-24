@@ -4,7 +4,7 @@ import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createContent, deleteContents } from '../services/content';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity, checkRequiredMetaFields } from '../services/util';
 import { Status } from '../enums/status';
 
 let mediaFileEntries: any[];
@@ -32,7 +32,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
       result: { data },
     } = validatedContentHeader;
 
-    const validatedContentRows = processContentRows(data?.rows, data?.header);
+    const validatedContentRows = processContentRows(data?.rows);
     if (!validatedContentRows?.result?.isValid) return validatedContentRows;
     const { result } = validatedContentRows;
 
@@ -109,15 +109,15 @@ const validateCSVContentHeaderRow = async (contentEntry: any) => {
   };
 };
 
-const processContentRows = (rows: any, header: any) => {
-  const processData = processRow(rows, header);
-  if (!processData || processData?.length === 0) {
-    logger.error('Content Row/Header:: Row processing failed or returned empty data');
+const processContentRows = (rows: any) => {
+  const processData = processRow(rows);
+  if (!processData || processData?.data?.length === 0) {
+    logger.error(`Content Row/header:: ${processData.errMsg}`);
     return {
-      error: { errStatus: 'process_error', errMsg: 'Row processing failed or returned empty data' },
+      error: { errStatus: 'process_error', errMsg: `content:: ${processData.errMsg}` },
       result: {
         isValid: false,
-        data: processData,
+        data: processData.data,
       },
     };
   }
@@ -126,7 +126,7 @@ const processContentRows = (rows: any, header: any) => {
     error: { errStatus: null, errMsg: null },
     result: {
       isValid: true,
-      data: processData,
+      data: processData.data,
     },
   };
 };
@@ -136,7 +136,7 @@ const bulkInsertContentStage = async (insertData: object[]) => {
   if (contentStage?.error) {
     logger.error(`Insert Content Staging:: ${processId} content bulk data error in inserting`);
     return {
-      error: { errStatus: 'errored', errMsg: 'content bulk data error in inserting' },
+      error: { errStatus: 'errored', errMsg: `content bulk data error in inserting ${contentStage.message}` },
       result: {
         isValid: false,
         data: null,
@@ -176,6 +176,10 @@ const validateStagedContentData = async () => {
       },
     };
   }
+
+  // Check if any row has invalid fields and collect invalid field names
+  const requiredMetaFieldsCheck = checkRequiredMetaFields(getAllContentStage);
+  if (!requiredMetaFieldsCheck?.result?.isValid) return requiredMetaFieldsCheck;
 
   const validateMetadata = await checkValidity(getAllContentStage);
   if (!validateMetadata?.result?.isValid) return validateMetadata;

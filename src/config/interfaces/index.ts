@@ -33,4 +33,7 @@ export interface IConfiguration {
   templateFileName: string;
   templateFolder: string;
   bulkUploadFolder: string;
+  questionBodyFields: string[];
+  mediaFields: string[];
+  requiredMetaFields: string[];
 }
