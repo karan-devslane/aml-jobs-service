@@ -4,8 +4,11 @@ import { uploadMediaFile } from '../services/awsService';
 import { updateProcess } from '../services/process';
 import { contentStageMetaData, createContentStage, getAllStageContent, updateContentStage } from '../services/contentStage';
 import { createContent, deleteContents } from '../services/content';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity, checkRequiredMetaFields } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
+import { appConfiguration } from '../config';
+
+const { requiredMetaFields } = appConfiguration;
 
 let mediaFileEntries: any[];
 let processId: string;
@@ -62,6 +65,7 @@ export const handleContentCsv = async (contentsCsv: object[], media: any, proces
 
   await updateProcess(processId, { status: Status.VALIDATED });
 
+  logger.info(`Content Media upload:: ${processId} content Stage data is ready for upload media to cloud`);
   const contentsMedia = await processContentMediaFiles();
   if (!contentsMedia?.result?.isValid) return contentsMedia;
 
@@ -178,7 +182,7 @@ const validateStagedContentData = async () => {
   }
 
   // Check if any row has invalid fields and collect invalid field names
-  const requiredMetaFieldsCheck = checkRequiredMetaFields(getAllContentStage);
+  const requiredMetaFieldsCheck = await checkRequiredMetaFields(getAllContentStage);
   if (!requiredMetaFieldsCheck?.result?.isValid) return requiredMetaFieldsCheck;
 
   const validateMetadata = await checkValidity(getAllContentStage);
@@ -235,7 +239,6 @@ const uploadErroredContentsToCloud = async () => {
     };
   }
   logger.info('Content csv upload:: all the data are validated successfully and uploaded to cloud for reference');
-  logger.info(`Content Media upload:: ${processId} content Stage data is ready for upload media to cloud`);
   return {
     error: { errStatus: 'validation_errored', errMsg: 'content file validation errored' },
     result: {
@@ -411,4 +414,48 @@ export const destroyContent = async () => {
   const contentId = contents?.map((obj: any) => obj.identifier);
   const deletedContent = await deleteContents(contentId);
   return deletedContent;
+};
+
+const checkRequiredMetaFields = async (stageData: any) => {
+  const allInvalidFields: string[] = [];
+
+  for (const row of stageData) {
+    const invalidFieldsInRow: string[] = [];
+
+    _.forEach(requiredMetaFields, (field) => {
+      const value = row[field];
+      if (_.isNull(value)) {
+        invalidFieldsInRow.push(field);
+      }
+    });
+
+    if (!_.isEmpty(invalidFieldsInRow)) {
+      allInvalidFields.push(...invalidFieldsInRow);
+
+      await updateContentStage(
+        { id: row.id },
+        {
+          status: 'errored',
+          error_info: `Empty field identified ${invalidFieldsInRow.join(',')}`,
+        },
+      );
+    }
+  }
+
+  const uniqueInvalidFields = _.uniq(allInvalidFields);
+  if (uniqueInvalidFields.length > 0) {
+    return {
+      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s): ${uniqueInvalidFields.join(',')}` },
+      result: {
+        isValid: false,
+      },
+    };
+  }
+
+  return {
+    error: { errStatus: null, errMsg: null },
+    result: {
+      isValid: true,
+    },
+  };
 };

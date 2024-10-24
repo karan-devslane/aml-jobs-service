@@ -3,12 +3,14 @@ import * as _ from 'lodash';
 import { updateProcess } from '../services/process';
 import { createQuestionSetStage, getAllStageQuestionSet, questionSetStageMetaData, updateQuestionStageSet } from '../services/questionSetStage';
 import { createQuestionSet, deleteQuestionSets } from '../services/questionSet';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity, checkRequiredMetaFields } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 import { questionStageMetaData } from '../services/questionStage';
 import { contentStageMetaData } from '../services/contentStage';
+import { appConfiguration } from '../config';
 
 let processId: string;
+const { requiredMetaFields } = appConfiguration;
 
 export const handleQuestionSetCsv = async (questionSetsCsv: object[], process_id: string) => {
   processId = process_id;
@@ -173,7 +175,7 @@ const validateQuestionSetsStage = async () => {
   }
 
   // Check if any row has invalid fields and collect invalid field names
-  const requiredMetaFieldsCheck = checkRequiredMetaFields(getAllQuestionSetStage);
+  const requiredMetaFieldsCheck = await checkRequiredMetaFields(getAllQuestionSetStage);
   if (!requiredMetaFieldsCheck?.result?.isValid) return requiredMetaFieldsCheck;
 
   const validateMetadata = await checkValidity(getAllQuestionSetStage);
@@ -388,4 +390,48 @@ export const destroyQuestionSet = async () => {
   const questionSetId = questionSets.map((obj: any) => obj.identifier);
   const deletedQuestionSet = await deleteQuestionSets(questionSetId);
   return deletedQuestionSet;
+};
+
+const checkRequiredMetaFields = async (stageData: any) => {
+  const allInvalidFields: string[] = [];
+
+  for (const row of stageData) {
+    const invalidFieldsInRow: string[] = [];
+
+    _.forEach(requiredMetaFields, (field) => {
+      const value = row[field];
+      if (_.isNull(value)) {
+        invalidFieldsInRow.push(field);
+      }
+    });
+
+    if (!_.isEmpty(invalidFieldsInRow)) {
+      allInvalidFields.push(...invalidFieldsInRow);
+
+      await updateQuestionStageSet(
+        { id: row.id },
+        {
+          status: 'errored',
+          error_info: `Empty field identified ${invalidFieldsInRow.join(',')}`,
+        },
+      );
+    }
+  }
+
+  const uniqueInvalidFields = _.uniq(allInvalidFields);
+  if (uniqueInvalidFields.length > 0) {
+    return {
+      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s): ${uniqueInvalidFields.join(',')}` },
+      result: {
+        isValid: false,
+      },
+    };
+  }
+
+  return {
+    error: { errStatus: null, errMsg: null },
+    result: {
+      isValid: true,
+    },
+  };
 };

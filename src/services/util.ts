@@ -12,7 +12,7 @@ import * as fs from 'node:fs';
 import appRootPath from 'app-root-path';
 import path from 'path';
 
-const { bulkUploadFolder, templateFileName, templateFolder, requiredMetaFields } = appConfiguration;
+const { bulkUploadFolder, templateFileName, templateFolder } = appConfiguration;
 
 let processId: string;
 
@@ -274,38 +274,6 @@ export const getUniqueValues = (data: any[]): UniqueValues => {
     },
     {},
   ) as UniqueValues;
-};
-
-export const checkRequiredMetaFields = (stageData: any) => {
-  let invalidFields: string[] = [];
-  const hasInvalidField = _.some(stageData, (row) => {
-    const invalidForThisRow = _.filter(requiredMetaFields, (field) => {
-      const value = row[field];
-      return _.isNull(value);
-    });
-
-    if (!_.isEmpty(invalidForThisRow)) {
-      invalidFields = _.concat(invalidFields, invalidForThisRow);
-    }
-
-    return !_.isEmpty(invalidForThisRow);
-  });
-  const uniqueFields = _.uniq(invalidFields);
-  if (hasInvalidField) {
-    logger.error('Skipping the process due to invalid or empty field(s):', uniqueFields?.join(','));
-    return {
-      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s) or empty field(s):, ${uniqueFields?.join(',')}` },
-      result: {
-        isValid: false,
-      },
-    };
-  }
-  return {
-    error: { errStatus: null, errMsg: null },
-    result: {
-      isValid: true,
-    },
-  };
 };
 
 export const checkValidity = async (data: any[]): Promise<{ error: { errStatus: string | null; errMsg: string | null }; result: { isValid: boolean; data: any } }> => {

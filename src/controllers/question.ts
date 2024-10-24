@@ -5,13 +5,13 @@ import { updateProcess } from '../services/process';
 import { createQuestionStage, getAllStageQuestion, questionStageMetaData, updateQuestionStage } from '../services/questionStage';
 import { appConfiguration } from '../config';
 import { createQuestion, deleteQuestions } from '../services/question';
-import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity, checkRequiredMetaFields } from '../services/util';
+import { getCSVTemplateHeader, getCSVHeaderAndRow, validateHeader, processRow, convertToCSV, preloadData, checkValidity } from '../services/util';
 import { Status } from '../enums/status';
 
 let mediaFileEntries: any[];
 let processId: string;
 
-const { grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields, questionBodyFields, mediaFields } = appConfiguration;
+const { grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, grid2Fields, mcqFields, fibFields, questionBodyFields, mediaFields, requiredMetaFields } = appConfiguration;
 
 export const handleQuestionCsv = async (questionsCsv: object[], media: any, process_id: string) => {
   processId = process_id;
@@ -64,6 +64,7 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
   }
 
   await updateProcess(processId, { status: Status.VALIDATED });
+  logger.info(`Question Media upload:: ${processId} question Stage data is ready for upload media `);
 
   const questionsMedia = await processQuestionMediaFiles();
   if (!questionsMedia?.result?.isValid) {
@@ -194,7 +195,7 @@ const validateStagedQuestionData = async () => {
   }
 
   // Check if any row has invalid fields and collect invalid field names
-  const requiredMetaFieldsCheck = checkRequiredMetaFields(getAllQuestionStage);
+  const requiredMetaFieldsCheck = await checkRequiredMetaFields(getAllQuestionStage);
   if (!requiredMetaFieldsCheck?.result?.isValid) return requiredMetaFieldsCheck;
 
   const validateMetadata = await checkValidity(getAllQuestionStage);
@@ -303,7 +304,6 @@ const uploadErroredQuestionsToCloud = async () => {
     };
   }
   logger.info('Question Upload Cloud::All the question are validated and uploaded in the cloud for reference');
-  logger.info(`Question Media upload:: ${processId} question Stage data is ready for upload media `);
   return {
     error: { errStatus: 'validation_errored', errMsg: 'question file validation errored' },
     result: {
@@ -809,4 +809,48 @@ export const destroyQuestion = async () => {
   const questionId = questions.map((obj: any) => obj.identifier);
   const deletedQuestion = await deleteQuestions(questionId);
   return deletedQuestion;
+};
+
+const checkRequiredMetaFields = async (stageData: any) => {
+  const allInvalidFields: string[] = [];
+
+  for (const row of stageData) {
+    const invalidFieldsInRow: string[] = [];
+
+    _.forEach(requiredMetaFields, (field) => {
+      const value = row[field];
+      if (_.isNull(value)) {
+        invalidFieldsInRow.push(field);
+      }
+    });
+
+    if (!_.isEmpty(invalidFieldsInRow)) {
+      allInvalidFields.push(...invalidFieldsInRow);
+
+      await updateQuestionStage(
+        { id: row.id },
+        {
+          status: 'errored',
+          error_info: `Empty field identified ${invalidFieldsInRow.join(',')}`,
+        },
+      );
+    }
+  }
+
+  const uniqueInvalidFields = _.uniq(allInvalidFields);
+  if (uniqueInvalidFields.length > 0) {
+    return {
+      error: { errStatus: 'error', errMsg: `Skipping the process due to invalid field(s): ${uniqueInvalidFields.join(',')}` },
+      result: {
+        isValid: false,
+      },
+    };
+  }
+
+  return {
+    error: { errStatus: null, errMsg: null },
+    result: {
+      isValid: true,
+    },
+  };
 };
