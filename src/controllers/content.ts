@@ -267,7 +267,7 @@ const processContentMediaFiles = async () => {
         const mediaFiles = await Promise.all(
           content?.media_files?.map(async (o: string) => {
             const foundMedia = mediaFileEntries.slice(1).find((media: any) => {
-              return media?.entryName.split('/')[1] === o;
+              return media?.entryName.split('/')[1] === o[0];
             });
             if (foundMedia) {
               const mediaData = await uploadMediaFile(foundMedia, 'content');
