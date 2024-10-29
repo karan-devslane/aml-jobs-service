@@ -104,7 +104,7 @@ const processEachField = (value: any, header: any) => {
 
   //handle to make array fo string of l2 ,l3 and sub skills
   else if (headerName?.includes('l2_skill') || headerName?.includes('l3_skill')) {
-    value = typeof value === 'string' ? (isEmpty(value) ? [] : value.includes('#') ? value.split('#').map((m) => m.trim()) : [value.trim()]) : value.trim();
+    value = typeof value === 'string' ? (isEmpty(value) ? [] : value.includes('#') ? value.split('#').map((val) => val.trim()) : [value.trim()]) : value.trim();
   } else if (headerName === 'is_atomic') {
     value = value ? value : false;
   } else if (headerName.includes('sequence')) {
