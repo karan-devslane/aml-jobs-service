@@ -44,5 +44,7 @@ const initializeJobScheduler = (): void => {
   process.on('unhandledRejection', unexpectedErrorHandler);
 };
 // pre run on server startup
-processJob();
+processJob()
+  .then(() => logger.info('Pre run the event while server startup'))
+  .catch((err) => logger.error('Error while pre run the event', err));
 initializeJobScheduler();
