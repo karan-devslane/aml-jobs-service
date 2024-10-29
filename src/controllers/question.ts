@@ -344,10 +344,8 @@ const processQuestionMediaFiles = async () => {
             return null;
           }),
         );
-        if (mediaFiles.every((file: any) => file === null)) continue;
 
-        const validMediaFiles = mediaFiles.filter((file) => file !== null);
-        if (validMediaFiles?.length === 0) {
+        if (mediaFiles?.length === 0) {
           return {
             error: { errStatus: 'Empty', errMsg: 'No media found for the question' },
             result: {
@@ -356,7 +354,7 @@ const processQuestionMediaFiles = async () => {
             },
           };
         }
-        const updateContent = await updateQuestionStage({ id: question.id }, { media_files: validMediaFiles });
+        const updateContent = await updateQuestionStage({ id: question.id }, { media_files: mediaFiles });
         if (updateContent?.error) {
           logger.error('Question Media upload:: Media validation failed');
           return {

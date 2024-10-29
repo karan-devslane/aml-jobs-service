@@ -280,10 +280,7 @@ const processContentMediaFiles = async () => {
             return null;
           }),
         );
-        if (mediaFiles.every((file) => file === null)) continue;
-
-        const validMediaFiles = mediaFiles.filter((file: any) => file !== null);
-        if (validMediaFiles?.length === 0) {
+        if (mediaFiles?.length === 0) {
           return {
             error: { errStatus: 'Empty', errMsg: 'No media found for the content' },
             result: {
@@ -292,7 +289,7 @@ const processContentMediaFiles = async () => {
             },
           };
         }
-        const updateContent = await updateContentStage({ id: content.id }, { media_files: validMediaFiles });
+        const updateContent = await updateContentStage({ id: content.id }, { media_files: mediaFiles });
         if (updateContent?.error) {
           logger.error('Content Media upload:: Media validation or update failed');
         }

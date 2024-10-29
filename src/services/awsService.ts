@@ -30,13 +30,14 @@ export const uploadMediaFile = async (filesData: any, type: string) => {
   const filepath = path.extname(filesData.entryName);
   const fileMimeType = mime.lookup(filepath) || 'application/octet-stream';
   const fileName = filesData.entryName.split('/')[1];
+  const timestamp = Date.now();
   const command = new PutObjectCommand({
     Bucket: bucketName,
-    Key: `media/${type}/${fileName}`,
+    Key: `media/${type}/${timestamp}/${fileName}`,
     Body: filesData.getData(),
   });
   await s3Client.send(command);
-  return { file_name: fileName, src: `media/${type}`, mime_type: fileMimeType, mediaType: fileMimeType.split('/')[0] };
+  return { file_name: fileName, src: `media/${type}/${timestamp}/${fileName}`, mime_type: fileMimeType, mediaType: fileMimeType.split('/')[0] };
 };
 
 export const uploadCsvFile = async (filesData: any, fileName: string) => {
