@@ -1,7 +1,7 @@
 import logger from '../utils/logger';
 import { getAWSFolderData, uploadCsvFile } from '../services/awsService';
 import AdmZip from 'adm-zip';
-import _, { isEmpty, isNaN } from 'lodash';
+import _, { isArray, isEmpty, isNaN } from 'lodash';
 import { Parser } from '@json2csv/plainjs';
 import { getBoards, getClasses, getRepository, getSkills, getSubSkills, getTenants } from '../services/service';
 import { appConfiguration } from '../config';
@@ -120,7 +120,7 @@ const processEachField = (value: any, header: any) => {
   else if (headerName === 'instruction_media') {
     value = value ? value?.split('#') : [value];
   } else if (headerName === 'media_file') {
-    value = value ? value?.split(',') : [];
+    value = isEmpty(value) ? [] : value.includes('#') ? value.split('#').map((m: string) => m.trim()) : value.trim();
   }
 
   // Handle sub skills.
@@ -239,7 +239,7 @@ export const processRow = (rows: any) => {
           row.body[headerName] = cellValue ? String(cellValue) : '';
         } else if (headerName?.includes('media_file')) {
           row.media_files = row?.media_files || [];
-          if (cellValue) row?.media_files?.push(cellValue);
+          if (!isArray(cellValue) && !isEmpty(cellValue)) row?.media_files?.push(cellValue);
         }
       });
 
