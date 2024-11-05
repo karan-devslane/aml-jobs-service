@@ -589,6 +589,9 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
     case 'Addition_Grid-1':
       return addSubAnswer(bodyObject, skill);
 
+    case 'Addition_Fib':
+      return addFIBSubAnswer(bodyObject);
+
     case 'Subtraction_Grid-1':
       return addSubAnswer(bodyObject, skill);
 
@@ -687,6 +690,13 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     isPrefil,
     answerTop,
     answerResult: answerResult.split('').reverse().join(''),
+  };
+};
+
+const addFIBSubAnswer = (input: any) => {
+  const { grid_fib_n1, grid_fib_n2 } = input;
+  return {
+    result: parseInt(grid_fib_n1) + parseInt(grid_fib_n2),
   };
 };
 
