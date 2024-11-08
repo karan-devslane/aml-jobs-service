@@ -32,8 +32,8 @@ const appConfiguration: IConfiguration = {
   processInterval: get(envVars, 'PROCESS_INTERVAL', 300000) as number,
   reCheckProcessInterval: get(envVars, 'RE_CHECK_PROCESS_INTERVAL', 4) as number, //hours
   fileUploadInterval: get(envVars, 'FILE_UPLOAD_INTERVAL', 4) as number, //hours
-  grid1AddFields: get(envVars, 'GRID-1_ADD_FIELDS', 'grid_fib_n1,grid_fib_n2').split(','),
-  grid1SubFields: get(envVars, 'GRID-1_SUB_FIELDS', 'grid_fib_n1,grid_fib_n2').split(','),
+  grid1AddFields: get(envVars, 'GRID-1_ADD_FIELDS', 'grid1_show_carry,grid_fib_n1,grid_fib_n2').split(','),
+  grid1SubFields: get(envVars, 'GRID-1_SUB_FIELDS', 'grid1_show_regroup,grid_fib_n1,grid_fib_n2').split(','),
   grid1MultipleFields: get(envVars, 'GRID-1_MULTIPLE_FIELDS', 'grid_fib_n1,grid_fib_n2').split(','),
   grid1DivFields: get(envVars, 'GRID-1_DIVISION_FIELDS', 'grid_fib_n1,grid_fib_n2').split(','),
   grid2Fields: get(envVars, 'GRID-2_FIELDS', 'grid_fib_n1,grid_fib_n2').split(','),
