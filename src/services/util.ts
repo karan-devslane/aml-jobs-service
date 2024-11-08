@@ -167,6 +167,7 @@ export const getCSVHeaderAndRow = (csvEntries: any) => {
     const cleanHeader = parsedResult?.meta?.fields;
     const cleanRows = parsedResult?.data;
 
+    logger.info(`[getCSVHeaderAndRow] cleanHeader = ${JSON.stringify(cleanHeader)}`);
     return {
       error: { errStatus: null, errMsg: null },
       result: {

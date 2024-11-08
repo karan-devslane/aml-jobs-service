@@ -76,7 +76,9 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 };
 
 const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
+  logger.info(`[validateCSVQuestionHeaderRow] questionEntry = ${JSON.stringify(questionEntry)}`);
   const templateHeader = await getCSVTemplateHeader(questionEntry.entryName);
+  logger.info(`[validateCSVQuestionHeaderRow] templateHeader = ${JSON.stringify(templateHeader)}`);
   if (!templateHeader?.result?.isValid) {
     return {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
@@ -112,7 +114,9 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
 };
 
 const processQuestionRows = (rows: any) => {
+  logger.info(`[processQuestionRows] rows = ${JSON.stringify(rows)}`);
   const processData = processRow(rows);
+  logger.info(`[processQuestionRows] processData = ${JSON.stringify(processData)}`);
   if (!processData || processData?.data?.length === 0) {
     logger.error(`Question Row/header:: ${processData.errMsg}`);
     return {
@@ -125,6 +129,7 @@ const processQuestionRows = (rows: any) => {
   }
   logger.info('Question Row/header:: header and row process successfully and process 2 started');
   const updatedProcessData = processQuestionStage(processData.data);
+  logger.info(`[processQuestionRows] updatedProcessData = ${JSON.stringify(updatedProcessData)}`);
   if (!updatedProcessData || updatedProcessData?.length === 0) {
     logger.error('Question Row/header:: Stage 2 data processing failed or returned empty data');
     return {
@@ -146,6 +151,7 @@ const processQuestionRows = (rows: any) => {
 };
 
 const bulkInsertQuestionStage = async (insertData: object[]) => {
+  logger.info(`[bulkInsertQuestionStage] insertData = ${JSON.stringify(insertData)}`);
   const questionStage = await createQuestionStage(insertData);
   if (questionStage?.error) {
     logger.error(`Insert Staging:: ${processId} question bulk data error in inserting`);
