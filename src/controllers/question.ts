@@ -129,7 +129,6 @@ const processQuestionRows = (rows: any) => {
   }
   logger.info('Question Row/header:: header and row process successfully and process 2 started');
   const updatedProcessData = processQuestionStage(processData.data);
-  logger.info(`[processQuestionRows] updatedProcessData = ${JSON.stringify(updatedProcessData)}`);
   if (!updatedProcessData || updatedProcessData?.length === 0) {
     logger.error('Question Row/header:: Stage 2 data processing failed or returned empty data');
     return {
