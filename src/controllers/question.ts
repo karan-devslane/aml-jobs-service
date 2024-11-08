@@ -76,9 +76,7 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 };
 
 const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
-  logger.info(`[validateCSVQuestionHeaderRow] questionEntry = ${JSON.stringify(questionEntry)}`);
   const templateHeader = await getCSVTemplateHeader(questionEntry.entryName);
-  logger.info(`[validateCSVQuestionHeaderRow] templateHeader = ${JSON.stringify(templateHeader)}`);
   if (!templateHeader?.result?.isValid) {
     return {
       error: { errStatus: 'Template missing', errMsg: 'template missing' },
@@ -114,9 +112,7 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
 };
 
 const processQuestionRows = (rows: any) => {
-  // logger.info(`[processQuestionRows] rows = ${JSON.stringify(rows)}`);
   const processData = processRow(rows);
-  // logger.info(`[processQuestionRows] processData = ${JSON.stringify(processData)}`);
   if (!processData || processData?.data?.length === 0) {
     logger.error(`Question Row/header:: ${processData.errMsg}`);
     return {
@@ -488,8 +484,6 @@ const processQuestionStage = (questionsData: any) => {
     Mcq: mcqFields,
     Fib: fibFields,
   };
-  logger.info(`[processQuestionStage] fieldMapping = ${JSON.stringify(fieldMapping)}`);
-  logger.info(`[processQuestionStage] questionBodyFields = ${JSON.stringify(questionBodyFields)}`);
   questionsData.forEach((question: any) => {
     const questionType = question?.question_type === 'Grid-1' ? `${question?.question_type}_${question?.l1_skill}` : question?.question_type;
     const relevantFields = fieldMapping[questionType];
@@ -608,7 +602,6 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
 
 const addSubAnswer = (input: any, l1_skill: string) => {
   const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_carry, grid1_show_regroup } = input;
-  logger.info(`[addSubAnswer] input = ${JSON.stringify(input)}`);
 
   const maxLength = Math.max(grid_fib_n1.length, grid_fib_n2.length);
   const n1Str = grid_fib_n1.padStart(maxLength, '0');
@@ -619,17 +612,14 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   let answerResult = '';
   let isPrefil = false;
 
-  logger.info(`[addSubAnswer] l1_skill = ${l1_skill}`);
   if (l1_skill === 'Addition') {
     logger.info('[addSubAnswer] l1_skill is Addition');
     result = parseInt(n1Str) + parseInt(n2Str);
     isPrefil = grid1_show_carry === 'yes';
-    logger.info(`[addSubAnswer] grid1_show_carry = ${grid1_show_carry} and typeof grid1_show_carry = ${typeof grid1_show_carry} and isPrefil = ${isPrefil}`);
   } else if (l1_skill === 'Subtraction') {
     logger.info('[addSubAnswer] l1_skill is Subtraction');
     result = parseInt(n1Str) - parseInt(n2Str);
     isPrefil = grid1_show_regroup === 'yes';
-    logger.info(`[addSubAnswer] grid1_show_regroup = ${grid1_show_regroup} and typeof grid1_show_regroup = ${typeof grid1_show_regroup} and isPrefil = ${isPrefil}`);
   }
 
   const resultStr = result.toString();
@@ -697,7 +687,6 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   } else {
     answerTop = 'B'.repeat(n1Str.length);
   }
-  logger.info(`[addSubAnswer] final isPrefil = ${isPrefil} and typeof isPrefil = ${typeof isPrefil}`);
   return {
     result: parseInt(resultStr),
     isPrefil,
