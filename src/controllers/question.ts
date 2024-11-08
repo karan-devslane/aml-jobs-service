@@ -114,9 +114,9 @@ const validateCSVQuestionHeaderRow = async (questionEntry: any) => {
 };
 
 const processQuestionRows = (rows: any) => {
-  logger.info(`[processQuestionRows] rows = ${JSON.stringify(rows)}`);
+  // logger.info(`[processQuestionRows] rows = ${JSON.stringify(rows)}`);
   const processData = processRow(rows);
-  logger.info(`[processQuestionRows] processData = ${JSON.stringify(processData)}`);
+  // logger.info(`[processQuestionRows] processData = ${JSON.stringify(processData)}`);
   if (!processData || processData?.data?.length === 0) {
     logger.error(`Question Row/header:: ${processData.errMsg}`);
     return {
@@ -151,7 +151,6 @@ const processQuestionRows = (rows: any) => {
 };
 
 const bulkInsertQuestionStage = async (insertData: object[]) => {
-  logger.info(`[bulkInsertQuestionStage] insertData = ${JSON.stringify(insertData)}`);
   const questionStage = await createQuestionStage(insertData);
   if (questionStage?.error) {
     logger.error(`Insert Staging:: ${processId} question bulk data error in inserting`);
@@ -490,6 +489,8 @@ const processQuestionStage = (questionsData: any) => {
     Mcq: mcqFields,
     Fib: fibFields,
   };
+  logger.info('[processQuestionStage] fieldMapping', fieldMapping);
+  logger.info('[processQuestionStage] questionBodyFields', questionBodyFields);
   questionsData.forEach((question: any) => {
     const questionType = question?.question_type === 'Grid-1' ? `${question?.question_type}_${question?.l1_skill}` : question?.question_type;
     const relevantFields = fieldMapping[questionType];
