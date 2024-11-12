@@ -228,11 +228,19 @@ export const validateHeader = (entryName: string, header: any, templateHeader: a
 
 export const processRow = (rows: any) => {
   try {
+    let errMsg = '';
     const finalJsonForInsert = rows?.map((row: any) => {
       row.body = {};
 
       Object.keys(row).forEach((headerName: string) => {
         const cellValue = row[headerName];
+
+        if (headerName === 'mcq_correct_options' && row?.question_type === 'Mcq') {
+          const cellValueTokens = cellValue.trim().split(' ');
+          if (cellValueTokens.length !== 2 || cellValueTokens[0].toLowerCase() !== 'option' || Number.isNaN(+cellValueTokens[1])) {
+            errMsg = 'Invalid value format for mcq_correct_options column :: should be Option<space><option-number>';
+          }
+        }
 
         // Add fields matching the mcq, fib, grid, n1, n2 pattern to body
         if (headerName.startsWith('mcq') || headerName.startsWith('fib') || headerName.startsWith('grid') || headerName.includes('n1') || headerName.includes('n2')) {
@@ -249,6 +257,11 @@ export const processRow = (rows: any) => {
 
       return row;
     });
+
+    if (errMsg) {
+      logger.error(errMsg);
+      return { data: [], errMsg };
+    }
 
     return { data: finalJsonForInsert, errMsg: null };
   } catch (error: any) {
