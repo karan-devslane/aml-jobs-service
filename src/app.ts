@@ -1,9 +1,12 @@
 import { appConfiguration } from './config';
 import logger from './utils/logger';
 import { bulkUploadProcess } from './controllers/bulkUpload';
+import { registerFunctionsOnClassString } from './utils/string.util';
 let isJobRunning = false;
 
 const { processInterval } = appConfiguration;
+
+registerFunctionsOnClassString();
 
 const unexpectedErrorHandler = (error: Error): void => {
   logger.error('An unexpected error occurred', { message: error.message, stack: error.stack });

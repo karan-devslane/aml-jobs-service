@@ -544,7 +544,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
           wrong_answer: convertWrongAnswerSubSkills({ carry: obj?.sub_skill_carry, procedural: obj?.sub_skill_procedural, x_plus_x: obj?.sub_skill_x_plus_0, x_plus_0: obj?.sub_skill_x_plus_x }),
         },
         benchmark_time: obj?.benchmark_time,
-        status: 'draft',
+        status: 'live',
         media: obj?.media_files,
         created_by: 'system',
         is_active: true,
@@ -587,44 +587,33 @@ const getAnswer = (skill: string, num1: string, num2: string, type: string, body
       return divideWithSteps(Number(num1), Number(num2), type, bodyObject);
 
     case 'Addition_Grid-1':
-      return addSubAnswer(bodyObject, skill);
+      return addGrid1Answer(bodyObject);
 
     case 'Addition_Fib':
-      return addFIBSubAnswer(bodyObject);
+      return addFIBAnswer(bodyObject);
 
     case 'Subtraction_Grid-1':
-      return addSubAnswer(bodyObject, skill);
+      return subGrid1Answer(bodyObject);
 
     default:
       return undefined;
   }
 };
 
-const addSubAnswer = (input: any, l1_skill: string) => {
-  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_carry, grid1_show_regroup } = input;
+const addGrid1Answer = (input: any) => {
+  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_carry } = input;
 
   const maxLength = Math.max(grid_fib_n1.length, grid_fib_n2.length);
   const n1Str = grid_fib_n1.padStart(maxLength, '0');
   const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
   const maxLengthTwoNumber = Math.max(grid_fib_n1.length, grid_fib_n2.length);
-  let result = 0;
   let answerTop = '';
   let answerResult = '';
-  let isPrefil = false;
+  const isPrefil = grid1_show_carry === 'yes';
 
-  if (l1_skill === 'Addition') {
-    logger.info('[addSubAnswer] l1_skill is Addition');
-    result = parseInt(n1Str) + parseInt(n2Str);
-    isPrefil = grid1_show_carry === 'yes';
-  } else if (l1_skill === 'Subtraction') {
-    logger.info('[addSubAnswer] l1_skill is Subtraction');
-    result = parseInt(n1Str) - parseInt(n2Str);
-    isPrefil = grid1_show_regroup === 'yes';
-  }
+  const result = parseInt(n1Str) + parseInt(n2Str);
 
   const resultStr = result.toString();
-
-  const finalPrefillTop = isPrefil ? grid1_pre_fills_top + 'B'.repeat(resultStr.length - 1) : 'B'.repeat(resultStr.length);
 
   const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(resultStr.length - grid1_pre_fills_result.length);
 
@@ -636,7 +625,7 @@ const addSubAnswer = (input: any, l1_skill: string) => {
     }
   }
 
-  if (isPrefil && l1_skill === 'Addition') {
+  if (isPrefil) {
     let carry = 0;
     let carryString = '';
     for (let i = maxLengthTwoNumber - 1; i >= 0; i--) {
@@ -664,26 +653,6 @@ const addSubAnswer = (input: any, l1_skill: string) => {
         answerTop += '#';
       }
     }
-  } else if (isPrefil && l1_skill === 'Subtraction') {
-    let borrow = 0;
-    for (let i = maxLength - 1; i >= 0; i--) {
-      let n1Digit = parseInt(n1Str[i]);
-      const n2Digit = parseInt(n2Str[i]) + borrow;
-
-      if (n1Digit < n2Digit) {
-        borrow = 1;
-        n1Digit += 10;
-      } else {
-        borrow = 0;
-      }
-
-      const difference = n1Digit - n2Digit;
-      if (finalPrefillTop[i] === 'B') {
-        answerTop = 'B' + answerTop;
-      } else {
-        answerTop = difference.toString();
-      }
-    }
   } else {
     answerTop = 'B'.repeat(n1Str.length);
   }
@@ -695,7 +664,108 @@ const addSubAnswer = (input: any, l1_skill: string) => {
   };
 };
 
-const addFIBSubAnswer = (input: any) => {
+const borrowAndReturnNewNumber = (num: string, currentIndex: number) => {
+  let numStr = num;
+  const numOnLeft = +numStr[currentIndex - 1];
+  if (numOnLeft > 0) {
+    numStr = numStr.replaceAt(currentIndex - 1, `${numOnLeft - 1}`);
+    return numStr;
+  }
+
+  return borrowAndReturnNewNumber(numStr.replaceAt(currentIndex - 1, '9'), currentIndex - 1);
+};
+
+const getSubGrid1AnswerTop = (n1: number, n2: number): string[] => {
+  const originalN1Str = n1.toString();
+  let n1Str = n1.toString();
+
+  const L = n1Str.length;
+
+  const n2Str = n2.toString().padStart(L, '0');
+
+  const result = Array(L).fill('#');
+
+  for (let i = L - 1; i >= 0; i--) {
+    const num1 = +n1Str[i];
+    const num2 = +n2Str[i];
+    if (num1 < num2) {
+      result[i] = num1 + 10;
+      n1Str = borrowAndReturnNewNumber(n1Str, i);
+      result[i] = `${num1 + 10}`;
+      result[i - 1] = n1Str[i - 1];
+    } else if (originalN1Str[i] !== n1Str[i]) {
+      result[i] = n1Str[i];
+    }
+  }
+  return result;
+};
+
+const subGrid1Answer = (input: any) => {
+  const { grid_fib_n1, grid_fib_n2, grid1_pre_fills_top, grid1_pre_fills_result, grid1_show_regroup } = input;
+
+  const maxLength = Math.max(grid_fib_n1.length, grid_fib_n2.length);
+  const n1Str = grid_fib_n1.padStart(maxLength, '0');
+  const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
+  let result = 0;
+  // const answerTop = '';
+  let answerResult = '';
+  let isPrefil = false;
+  let addPaddingToResult = false;
+
+  logger.info('[addSubAnswer] l1_skill is Subtraction');
+  result = parseInt(n1Str) - parseInt(n2Str);
+  if (grid1_show_regroup === 'yes') {
+    isPrefil = !(n1Str.length <= 2 && n2Str.length === 1 && grid_fib_n1 < 20);
+  } else {
+    isPrefil = false;
+  }
+
+  const answerTop: string[] = getSubGrid1AnswerTop(n1Str, n2Str);
+  if (isPrefil) {
+    isPrefil = !answerTop.every((item: string) => item === '#');
+  }
+
+  if (isPrefil) {
+    const fillableIndicesOfAnswerTop = answerTop.reduce((agg: number[], curr, index) => {
+      if (curr !== '#') {
+        agg.push(index);
+      }
+      return agg;
+    }, []);
+
+    if (fillableIndicesOfAnswerTop.length === grid1_pre_fills_top.length) {
+      for (let i = 0; i < fillableIndicesOfAnswerTop.length; i++) {
+        const indexOfAnswerTop = fillableIndicesOfAnswerTop[i];
+        if (grid1_pre_fills_top[i] === 'B') {
+          answerTop[indexOfAnswerTop] = 'B';
+        }
+      }
+    }
+  }
+
+  if (isPrefil) {
+    addPaddingToResult = true;
+  }
+
+  const resultStr = addPaddingToResult ? result.toString().padStart(n1Str.length, '0') : result.toString();
+
+  for (let i = resultStr.length - 1; i >= 0; i--) {
+    if (grid1_pre_fills_result[i] === 'B') {
+      answerResult += 'B';
+    } else {
+      answerResult += resultStr[i];
+    }
+  }
+
+  return {
+    result: resultStr,
+    isPrefil,
+    answerTop: answerTop.join('|'),
+    answerResult: answerResult.split('').reverse().join(''),
+  };
+};
+
+const addFIBAnswer = (input: any) => {
   const { grid_fib_n1, grid_fib_n2 } = input;
   return {
     result: parseInt(grid_fib_n1) + parseInt(grid_fib_n2),
