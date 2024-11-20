@@ -395,7 +395,7 @@ const formatStagedContentData = async (stageData: any[]) => {
       },
       sub_skills: obj?.sub_skills?.map((subSkill: string) => subSkills.find((sub: any) => sub?.name?.en === subSkill)),
       gradient: obj?.gradient,
-      status: 'draft',
+      status: 'live',
       media: obj?.media_files,
       created_by: 'system',
       is_active: true,
