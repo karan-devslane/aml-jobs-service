@@ -742,8 +742,8 @@ const subGrid1Answer = (input: any) => {
 
   let resultStr = result.toString();
 
-  if (n1Str.length === 2 && n2Str.length === 1) {
-    addPaddingToResult = resultStr.length === 1;
+  if (grid_fib_n1.length === 2 && grid_fib_n2.length === 1) {
+    addPaddingToResult = resultStr.length !== 1;
   } else {
     addPaddingToResult = true;
   }
