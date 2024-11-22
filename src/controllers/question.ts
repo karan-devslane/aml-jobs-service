@@ -556,7 +556,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
     return transformedData;
   } catch (error: any) {
     logger.error('Question Insert main::Error while formatting data for main ', error.message);
-    return [];
+    throw error;
   }
 };
 
@@ -710,6 +710,7 @@ const subGrid1Answer = (input: any) => {
   let answerResult = '';
   let isPrefil = grid1_show_regroup === 'yes';
   let addPaddingToResult = true;
+  let errorMsg = '';
 
   logger.info('[addSubAnswer] l1_skill is Subtraction');
   result = parseInt(n1Str) - parseInt(n2Str);
@@ -735,7 +736,7 @@ const subGrid1Answer = (input: any) => {
         }
       }
     } else {
-      throw new Error(`Incorrect grid1_pre_fills_top for values:: grid_fib_n1 = ${grid_fib_n1} & grid_fib_n2 = ${grid_fib_n2}`);
+      errorMsg = 'Incorrect grid1_pre_fills_top';
     }
   }
 
@@ -748,6 +749,15 @@ const subGrid1Answer = (input: any) => {
   }
 
   resultStr = addPaddingToResult ? resultStr.padStart(n1Str.length, '0') : resultStr;
+
+  if (resultStr.length !== grid1_pre_fills_result.length) {
+    errorMsg = 'Incorrect grid1_pre_fills_result';
+  }
+
+  if (errorMsg) {
+    const errorContext = `grid_fib_n1 = ${grid_fib_n1} & grid_fib_n2 = ${grid_fib_n2}`;
+    throw new Error(`${errorMsg} :: ${errorContext}`);
+  }
 
   for (let i = resultStr.length - 1; i >= 0; i--) {
     if (grid1_pre_fills_result[i] === 'B') {
