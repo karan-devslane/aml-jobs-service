@@ -707,18 +707,12 @@ const subGrid1Answer = (input: any) => {
   const n1Str = grid_fib_n1.padStart(maxLength, '0');
   const n2Str = grid_fib_n2.padStart(n1Str.length, '0');
   let result = 0;
-  // const answerTop = '';
   let answerResult = '';
-  let isPrefil = false;
-  let addPaddingToResult = false;
+  let isPrefil = grid1_show_regroup === 'yes';
+  let addPaddingToResult = true;
 
   logger.info('[addSubAnswer] l1_skill is Subtraction');
   result = parseInt(n1Str) - parseInt(n2Str);
-  if (grid1_show_regroup === 'yes') {
-    isPrefil = !(n1Str.length <= 2 && n2Str.length === 1 && grid_fib_n1 < 20);
-  } else {
-    isPrefil = false;
-  }
 
   const answerTop: string[] = getSubGrid1AnswerTop(n1Str, n2Str);
   if (isPrefil) {
@@ -740,14 +734,20 @@ const subGrid1Answer = (input: any) => {
           answerTop[indexOfAnswerTop] = 'B';
         }
       }
+    } else {
+      throw new Error(`Incorrect grid1_pre_fills_top for values:: grid_fib_n1 = ${grid_fib_n1} & grid_fib_n2 = ${grid_fib_n2}`);
     }
   }
 
-  if (isPrefil) {
+  let resultStr = result.toString();
+
+  if (n1Str.length === 2 && n2Str.length === 1) {
+    addPaddingToResult = resultStr.length === 1;
+  } else {
     addPaddingToResult = true;
   }
 
-  const resultStr = addPaddingToResult ? result.toString().padStart(n1Str.length, '0') : result.toString();
+  resultStr = addPaddingToResult ? resultStr.padStart(n1Str.length, '0') : resultStr;
 
   for (let i = resultStr.length - 1; i >= 0; i--) {
     if (grid1_pre_fills_result[i] === 'B') {
