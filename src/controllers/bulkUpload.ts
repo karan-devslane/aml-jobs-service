@@ -187,7 +187,7 @@ const validateZipFile = async (bulkUploadMetadata: any, fileName: string): Promi
   const fileExt = fileMetadata ? path.extname(fileMetadata.Key).toLowerCase() : '';
 
   if (fileExt !== '.zip') {
-    logger.error(`Zip Format::For ${processId} the ${bulkUploadMetadata[0].Key} Unsupported file format, please upload a ZIP file.`);
+    logger.error(`Zip Format::For ${processId} the ${fileMetadata.Key} Unsupported file format, please upload a ZIP file.`);
     return {
       error: { errStatus: 'unsupported_format', errMsg: 'The uploaded file is an unsupported format, please upload all CSV files inside a ZIP file.' },
       result: { isValidZip: false, data: null },
