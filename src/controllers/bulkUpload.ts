@@ -51,7 +51,7 @@ export const bulkUploadProcess = async () => {
         continue;
       }
       logger.info(`Validating bulk upload folder for process ID: ${process_id}.`);
-      const zipValidation = await validateZipFile(bulkUploadMetadata.Contents);
+      const zipValidation = await validateZipFile(bulkUploadMetadata.Contents, fileName);
       const {
         result: { isValidZip },
       } = zipValidation;
@@ -173,14 +173,19 @@ const checkStagingProcess = async () => {
   return { error: null, result: { validStageData: true, data: null } };
 };
 
-const validateZipFile = async (bulkUploadMetadata: any): Promise<any> => {
+const validateZipFile = async (bulkUploadMetadata: any, fileName: string): Promise<any> => {
   if (_.isEmpty(bulkUploadMetadata)) {
     return {
       error: { errStatus: 'empty', errMsg: 'No zip file found' },
       result: { isValidZip: false, data: null },
     };
   }
-  const fileExt = path.extname(bulkUploadMetadata[0].Key || '').toLowerCase();
+
+  // Find the file metadata by matching the extracted fileName
+  const fileMetadata = bulkUploadMetadata.find((file: any) => path.basename(file.Key) === fileName);
+
+  const fileExt = fileMetadata ? path.extname(fileMetadata.Key).toLowerCase() : '';
+
   if (fileExt !== '.zip') {
     logger.error(`Zip Format::For ${processId} the ${bulkUploadMetadata[0].Key} Unsupported file format, please upload a ZIP file.`);
     return {
