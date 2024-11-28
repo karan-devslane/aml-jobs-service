@@ -18,8 +18,8 @@ export const QuestionStage = AppDataSource.define(
       allowNull: true,
     },
     question_text: {
-      type: DataTypes.STRING,
-      allowNull: true,
+      type: DataTypes.JSONB,
+      allowNull: false,
     },
     question_id: {
       type: DataTypes.STRING,
@@ -70,8 +70,8 @@ export const QuestionStage = AppDataSource.define(
       allowNull: true,
     },
     description: {
-      type: DataTypes.STRING,
-      allowNull: true,
+      type: DataTypes.JSONB,
+      allowNull: false,
     },
     body: {
       type: DataTypes.JSONB,
