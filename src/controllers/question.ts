@@ -16,7 +16,7 @@ const { grid1AddFields, grid1DivFields, grid1MultipleFields, grid1SubFields, gri
 export const handleQuestionCsv = async (questionsCsv: object[], media: any, process_id: string) => {
   processId = process_id;
   mediaFileEntries = media;
-  let questionsData: object[] = [];
+  let questionsData: any[] = [];
   if (questionsCsv.length === 0) {
     logger.error(`${processId} Question data validation resulted in empty data.`);
     return {
@@ -52,8 +52,14 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
     }
   }
 
+  const questionsDataForStage = questionsData.map((data) => ({
+    ...data,
+    question_text: { en: data?.question_text_en || data?.question_text || '', kn: data?.question_text_kn || '' },
+    description: { en: data?.description_en || data?.description || '', kn: data?.description_kn || '' },
+  }));
+
   logger.info('Insert question Stage::Questions Data ready for bulk insert');
-  const createQuestions = await bulkInsertQuestionStage(questionsData);
+  const createQuestions = await bulkInsertQuestionStage(questionsDataForStage);
   if (!createQuestions?.result?.isValid) return createQuestions;
 
   const validateQuestions = await validateStagedQuestionData();
@@ -522,8 +528,8 @@ const formatQuestionStageData = async (stageData: any[]) => {
         question_type: obj?.question_type,
         operation: obj?.l1_skill,
         hints: obj?.hint,
-        name: { en: obj?.title || obj?.question_text },
-        description: { en: obj?.description },
+        name: obj?.question_text,
+        description: obj?.description,
         tenant: '',
         repository: repositories.find((repository: any) => repository.name.en === obj?.repository_name),
         taxonomy: {
