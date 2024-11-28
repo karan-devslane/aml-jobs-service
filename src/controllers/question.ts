@@ -838,7 +838,7 @@ const multiplicationGrid1Answer = (input: any) => {
   }
 
   const answerIntermediateRaw = answers.join('#');
-  let answerIntermediate = grid1_multiply_intermediate_steps_prefills.split('');
+  const answerIntermediate = grid1_multiply_intermediate_steps_prefills.split('');
 
   for (let i = 0; i < answerIntermediate.length; i++) {
     if (answerIntermediate[i] === 'F') {
