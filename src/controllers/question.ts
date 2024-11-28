@@ -810,7 +810,8 @@ const multiplicationGrid1Answer = (input: any) => {
     while (num2Copy > 0) {
       const lastDigit = num2Copy % 10;
       const product = lastDigit * grid_fib_n1 * factor;
-      answers.unshift(product === 0 ? product.toString().padStart(grid_fib_n1.toString().length, '0') : product.toString());
+      const answer = product === 0 ? product.toString().padStart(grid_fib_n1.toString().length + Math.log10(factor), '0') : product.toString();
+      answers.unshift(answer);
       factor *= 10;
       num2Copy = Math.floor(num2Copy / 10);
     }
@@ -821,7 +822,6 @@ const multiplicationGrid1Answer = (input: any) => {
     }
 
     for (let i = 0; i < intermediateStepPrefills.length; i++) {
-      // **Fix: Pad the answer to match the prefill length**
       if (answers[i].length !== intermediateStepPrefills[i].length) {
         errorMsg = 'Incorrect grid1_multiply_intermediate_steps_prefills';
       }
@@ -838,10 +838,10 @@ const multiplicationGrid1Answer = (input: any) => {
   }
 
   const answerIntermediateRaw = answers.join('#');
-  const answerIntermediate = grid1_multiply_intermediate_steps_prefills;
+  let answerIntermediate = grid1_multiply_intermediate_steps_prefills.split('');
 
-  for (let i = 0; i < grid1_multiply_intermediate_steps_prefills.length; i++) {
-    if (grid1_multiply_intermediate_steps_prefills[i] === 'F') {
+  for (let i = 0; i < answerIntermediate.length; i++) {
+    if (answerIntermediate[i] === 'F') {
       answerIntermediate[i] = answerIntermediateRaw[i];
     }
   }
@@ -853,7 +853,7 @@ const multiplicationGrid1Answer = (input: any) => {
 
   return {
     isIntermediatePrefill,
-    answerIntermediate: answerIntermediate.split('#').reverse().join('#'),
+    answerIntermediate: answerIntermediate.join('').split('#').reverse().join('#'),
     result: actualResult,
     answerResult: answerResultString,
   };
