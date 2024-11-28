@@ -581,22 +581,23 @@ const convertWrongAnswerSubSkills = (inputData: any) => {
 
 const getAnswer = (skill: string, num1: string, num2: string, type: string, bodyObject: any, question_type: string) => {
   switch (`${skill}_${question_type}`) {
-    case 'Multiplication_Grid-1':
-      return multiplyGrid1Answer(bodyObject);
-    case 'Division_Grid-1':
-      return divideWithSteps(Number(num1), Number(num2), type, bodyObject);
-
     case 'Addition_Grid-1':
       return addGrid1Answer(bodyObject);
-
     case 'Addition_Fib':
       return addFIBAnswer(bodyObject);
 
     case 'Subtraction_Grid-1':
       return subGrid1Answer(bodyObject);
-
     case 'Subtraction_Fib':
       return subFIBAnswer(bodyObject);
+
+    case 'Multiplication_Grid-1':
+      return multiplicationGrid1Answer(bodyObject);
+    case 'Multiplication_Fib':
+      return multiplicationFIBAnswer(bodyObject);
+
+    case 'Division_Grid-1':
+      return divideWithSteps(Number(num1), Number(num2), type, bodyObject);
 
     default:
       return undefined;
@@ -792,66 +793,14 @@ const subFIBAnswer = (input: any) => {
   };
 };
 
-// const multiplyWithSteps = (num1: string, num2: string, type: string, prefillPattern?: any) => {
-//   const { grid1_multiply_intermediate_steps_prefills, grid1_pre_fills_result } = prefillPattern;
-//   const n1 = Number(num1);
-//   const n2 = Number(num2);
-//   if (type === 'Grid-1') {
-//     const num2Str = num2.toString();
-//     const num2Length = num2Str.length;
-//     let intermediateStep = '';
-//     let runningTotal = 0;
-//     let answerResult = '';
-//     let answerIntermediateResult = '';
-
-//     for (let i = 0; i < num2Length; i++) {
-//       const placeValue = parseInt(num2Str[num2Length - 1 - i]) * Math.pow(10, i);
-//       const product = n1 * placeValue;
-//       intermediateStep += product.toString();
-//       runningTotal += product;
-//     }
-
-//     const runningTotalAsString = runningTotal.toString();
-//     if (grid1_pre_fills_result.includes('F')) {
-//       const updatedPrefilResult = grid1_pre_fills_result + 'B'.repeat(runningTotalAsString.length - grid1_pre_fills_result.length);
-//       for (let i = runningTotalAsString.length - 1; i >= 0; i--) {
-//         if (updatedPrefilResult[i] === 'B') {
-//           answerResult += 'B';
-//         } else {
-//           answerResult += runningTotalAsString.toString()[i];
-//         }
-//       }
-//     }
-//     if (grid1_multiply_intermediate_steps_prefills.includes('F')) {
-//       const updatedIntermediatePrefilResult = grid1_multiply_intermediate_steps_prefills + 'B'.repeat(intermediateStep.length - grid1_multiply_intermediate_steps_prefills.length);
-//       for (let i = intermediateStep.length - 1; i >= 0; i--) {
-//         if (updatedIntermediatePrefilResult[i] === 'B') {
-//           answerIntermediateResult += 'B';
-//         } else {
-//           answerIntermediateResult += intermediateStep[i];
-//         }
-//       }
-//     }
-
-//     return {
-//       intermediateStep: intermediateStep,
-//       result: runningTotal,
-//       intermediatePrefil: answerIntermediateResult,
-//       answerPrefil: answerResult,
-//     };
-//   }
-//   return { result: n1 * n2 };
-// };
-
-const multiplyGrid1Answer = (input: any) => {
+const multiplicationGrid1Answer = (input: any) => {
   const { grid_fib_n1, grid_fib_n2, grid1_multiply_intermediate_steps_prefills, grid1_pre_fills_result } = input;
 
   const isIntermediatePrefill = grid_fib_n2.toString().length > 1;
-  const intermediateStepPrefills = grid1_multiply_intermediate_steps_prefills?.split('#');
+  const intermediateStepPrefills: string[] = grid1_multiply_intermediate_steps_prefills?.split('#');
 
   let errorMsg = '';
-  let answers: number[] = [];
-  let intermediateAnswerString = [];
+  const answers: string[] = [];
   const actualResult = grid_fib_n1 * grid_fib_n2;
 
   if (isIntermediatePrefill) {
@@ -861,7 +810,7 @@ const multiplyGrid1Answer = (input: any) => {
     while (num2Copy > 0) {
       const lastDigit = num2Copy % 10;
       const product = lastDigit * grid_fib_n1 * factor;
-      answers.unshift(product);
+      answers.unshift(product === 0 ? product.toString().padStart(grid_fib_n1.toString().length, '0') : product.toString());
       factor *= 10;
       num2Copy = Math.floor(num2Copy / 10);
     }
@@ -873,24 +822,28 @@ const multiplyGrid1Answer = (input: any) => {
 
     for (let i = 0; i < intermediateStepPrefills.length; i++) {
       // **Fix: Pad the answer to match the prefill length**
-      const paddedAnswer = answers[i].toString().padStart(intermediateStepPrefills[i].length, '0');
-      if (paddedAnswer.length !== intermediateStepPrefills[i].length) {
+      if (answers[i].length !== intermediateStepPrefills[i].length) {
         errorMsg = 'Incorrect grid1_multiply_intermediate_steps_prefills';
       }
     }
-
-    // Replace 'F' placeholders with digits from padded answers
-    intermediateAnswerString = intermediateStepPrefills.map((prefill: string, index: number) => {
-      const paddedAnswer = answers[index].toString().padStart(prefill.length, '0');
-      return prefill
-        .split('')
-        .map((char: string, i: number) => (char === 'F' ? paddedAnswer[i] : char))
-        .join('');
-    });
   }
 
   if (actualResult.toString().length !== grid1_pre_fills_result.length) {
     errorMsg = 'Incorrect grid1_pre_fills_result';
+  }
+
+  if (errorMsg) {
+    const errorContext = `grid_fib_n1 = ${grid_fib_n1} & grid_fib_n2 = ${grid_fib_n2}`;
+    throw new Error(`${errorMsg} :: ${errorContext}`);
+  }
+
+  const answerIntermediateRaw = answers.join('#');
+  const answerIntermediate = grid1_multiply_intermediate_steps_prefills;
+
+  for (let i = 0; i < grid1_multiply_intermediate_steps_prefills.length; i++) {
+    if (grid1_multiply_intermediate_steps_prefills[i] === 'F') {
+      answerIntermediate[i] = answerIntermediateRaw[i];
+    }
   }
 
   const answerResultString = grid1_pre_fills_result
@@ -898,16 +851,19 @@ const multiplyGrid1Answer = (input: any) => {
     .map((char: string, index: number) => (char === 'F' ? actualResult.toString()[index] : char))
     .join('');
 
-  if (errorMsg) {
-    const errorContext = `grid_fib_n1 = ${grid_fib_n1} & grid_fib_n2 = ${grid_fib_n2}`;
-    throw new Error(`${errorMsg} :: ${errorContext}`);
-  }
-
   return {
     isIntermediatePrefill,
-    answerIntermediate: intermediateAnswerString.join('#'),
+    answerIntermediate: answerIntermediate.split('#').reverse().join('#'),
     result: actualResult,
     answerResult: answerResultString,
+  };
+};
+
+const multiplicationFIBAnswer = (input: any) => {
+  const { grid_fib_n1, grid_fib_n2 } = input;
+
+  return {
+    result: parseInt(grid_fib_n1) * parseInt(grid_fib_n2),
   };
 };
 
