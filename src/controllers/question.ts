@@ -61,6 +61,7 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
 
   const descriptionFields = Object.keys(questionsData[0]).filter((field) => field.startsWith('description_'));
   const questionTextFields = Object.keys(questionsData[0]).filter((field) => field.startsWith('question_text_'));
+  const audioTextFields = Object.keys(questionsData[0]).filter((field) => field.startsWith('audio_text_'));
 
   const questionsDataForStage = questionsData.map((data) => ({
     ...data,
@@ -71,6 +72,11 @@ export const handleQuestionCsv = async (questionsCsv: object[], media: any, proc
       return agg;
     }, {}),
     description: descriptionFields.reduce((agg, curr) => {
+      const languageKey = curr.split('_').pop() as string;
+      _.set(agg, languageKey, data?.[curr]);
+      return agg;
+    }, {}),
+    question_audio_description: audioTextFields.reduce((agg, curr) => {
       const languageKey = curr.split('_').pop() as string;
       _.set(agg, languageKey, data?.[curr]);
       return agg;
@@ -588,6 +594,7 @@ const formatQuestionStageData = async (stageData: any[]) => {
         media: obj?.media_files,
         created_by: 'system',
         is_active: true,
+        question_audio_description: obj?.question_audio_description,
       };
     });
 

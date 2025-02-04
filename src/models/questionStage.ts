@@ -114,6 +114,10 @@ export const QuestionStage = AppDataSource.define(
       type: DataTypes.JSON,
       allowNull: true,
     },
+    question_audio_description: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
     created_by: {
       type: DataTypes.STRING,
       allowNull: true,
