@@ -668,7 +668,7 @@ const getCarryValues = (n1: string, n2: string) => {
   let i = maxLength - 1;
   const carries = [];
   let lastCarry = 0;
-  while (i > 0) {
+  while (i >= 0) {
     const num1 = +n1Str[i];
     const num2 = +n2Str[i];
     if (num1 + num2 + lastCarry > 9) {
